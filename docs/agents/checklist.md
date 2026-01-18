@@ -17,11 +17,46 @@ Gather these core items:
 | target_audience | Who uses this (be specific about context) |
 | problems_solved | What pain points does this address |
 | auth_requirements | None / Google / Email+Password / Magic link / Metamask / Rainbowkit / Other |
+| ui_ux_references | Screenshots, links, descriptions of designs user likes (see below) |
 
 **Tips:**
 - Ask follow-up questions if answers are vague
 - "Users" is too generic - ask WHO specifically
 - Problems should be from user's perspective, not technical
+
+### UI/UX References
+
+**Default assumption: User has references.** Always ask.
+
+Prompt: "Do you have any UI/UX references? Screenshots, links to sites you like, or descriptions of styles that appeal to you?"
+
+**For each reference, gather:**
+
+| Type | Description |
+|------|-------------|
+| Screenshots | Preferred for visual design — user uploads images |
+| Links | Optional — URLs for context or structure reference |
+| What they like | Required — specific elements: "clean sidebar", "card layout", "color scheme", "typography" |
+
+**User can say "No refs"** to skip.
+
+**Follow-up for vague refs:**
+- "You mentioned Linear — is it the sidebar nav, the card layout, or the color scheme you like?"
+- "For that dashboard screenshot — do you want the exact layout or just the general feel?"
+
+**Example format:**
+
+```
+UI/UX References:
+1. Screenshot: [uploaded image]
+   Likes: "The minimal sidebar with monochrome icons, the card-based content area"
+
+2. Link: https://linear.app
+   Likes: "The clean typography and muted color palette"
+
+3. Description only:
+   "Modern, minimal, lots of whitespace, no clutter"
+```
 
 ---
 

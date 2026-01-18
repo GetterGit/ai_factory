@@ -86,7 +86,9 @@ If `docs/status.md` does NOT exist:
 
 ### Step 1: Gather Requirements
 
-Ask until you have: project_name, what_to_build, target_audience, problems_solved, auth_requirements.
+Ask until you have: project_name, what_to_build, target_audience, problems_solved, auth_requirements, ui_ux_references.
+
+**Reference**: See `docs/agents/checklist.md` for detailed format and examples.
 
 ### Step 2: Gather Job Stories
 
