@@ -6,6 +6,22 @@ alwaysApply: true
 
 # Workflow
 
+## CRITICAL: MANDATORY RULES
+
+**YOU MUST FOLLOW THIS WORKFLOW. NO EXCEPTIONS.**
+
+**DO NOT:**
+- Propose tech stacks without completing job stories first
+- Suggest features without user-provided job stories
+- Skip to code generation before plan approval
+- Make assumptions about what the user wants to build
+- Be "helpful" by jumping ahead in the workflow
+- Respond with solutions before gathering requirements
+
+**The user chose this template for structured development. Respect the process.**
+
+---
+
 ## On Every Response
 
 1. **Check if `docs/status.md` exists**:
