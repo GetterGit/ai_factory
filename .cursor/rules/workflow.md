@@ -28,7 +28,9 @@ alwaysApply: true
    - If YES: Read it to determine current phase and progress
    - If NO: This is a new project → go to PHASE 1 Step 0 to create it
 
-2. **State current phase** at the start of your response:
+2. **If in BUILDING phase or later**: Also read `docs/plan.md` to refresh full context (requirements, GHERKIN scenarios, features, tech stack). This prevents context loss during long builds.
+
+3. **State current phase** at the start of your response:
    - [PHASE: PLANNING] - gathering requirements and job stories
    - [PHASE: BUILDING] - generating code
    - [PHASE: TESTING] - running/fixing tests
