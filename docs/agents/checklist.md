@@ -6,7 +6,25 @@ This document contains formats, examples, and guidance for gathering requirement
 
 ---
 
-## Step 1: Requirements
+## Step 1: Initialize Status
+
+If `docs/status.md` does NOT exist:
+
+1. **Read template**: `docs/agents/templates/status-template.md`
+2. **Create**: `docs/status.md`
+3. **Set initial values**:
+   - Phase: PLANNING
+   - Status: IN_PROGRESS
+   - Project: [leave blank until Step 2]
+   - Branch: [leave blank until PHASE 2]
+   - Iteration: v1
+4. **Log in History**: "Started PHASE 1: PLANNING"
+
+No user input required for this step.
+
+---
+
+## Step 2: Requirements
 
 Gather these core items:
 
@@ -18,11 +36,13 @@ Gather these core items:
 | problems_solved | What pain points does this address |
 | auth_requirements | None / Google / Email+Password / Magic link / Metamask / Rainbowkit / Other |
 | ui_ux_references | Screenshots, links, descriptions of designs user likes (see below) |
+| performance_requirements | (Optional) SLA-type requirements: "sync < 30 sec", "page load < 2 sec" |
 
 **Tips:**
 - Ask follow-up questions if answers are vague
 - "Users" is too generic - ask WHO specifically
 - Problems should be from user's perspective, not technical
+- After getting project_name, update `docs/status.md` Project field
 
 ### UI/UX References
 
@@ -60,7 +80,7 @@ UI/UX References:
 
 ---
 
-## Step 2: Job Stories
+## Step 3: Job Stories
 
 ### Format
 
@@ -107,7 +127,7 @@ So my accountant can file correctly
 
 ---
 
-## Step 3: GHERKIN Scenarios
+## Step 4: GHERKIN Scenarios
 
 ### Format
 
@@ -157,7 +177,7 @@ Scenario: Empty portfolio state
 
 ---
 
-## Step 4: Derive Features
+## Step 5: Derive Features
 
 ### Process
 
@@ -182,13 +202,22 @@ Scenario: Empty portfolio state
 
 ---
 
-## Step 4.5: External APIs
+## Step 6: External APIs
 
 ### Process
 
 1. Review features for external dependencies
 2. Propose APIs based on project needs
-3. Confirm with user before proceeding
+3. Ask user for documentation links (optional but recommended)
+4. Confirm with user before proceeding
+
+### Documentation Links
+
+For each API, ask user (optional but helpful):
+- Official documentation URL
+- OpenAPI/Swagger spec URL if available
+
+"Providing docs links helps ensure I use the correct, up-to-date API endpoints."
 
 ### Selection Criteria
 
@@ -212,12 +241,12 @@ User may:
 ### If User Mentions Unknown API
 
 - Ask them to briefly describe what it does
-- Ask for documentation link if available
+- Ask for documentation link (official docs, Swagger, or OpenAPI spec)
 - Note any specific endpoints or features they need
 
 ---
 
-## Step 5: Tech Stack
+## Step 7: Tech Stack
 
 ### Selection Criteria
 
@@ -235,6 +264,11 @@ When proposing tech stack, consider:
 - **Database**: If needed
 - **Deployment approach**: How it will be deployed
 
+### Defaults
+
+- **For web apps**: Mobile-first responsive design with desktop adaptation
+- **Database migrations**: If using a database, include migration strategy in proposal
+
 ### Confirmation
 
 Always confirm with user:
@@ -250,7 +284,7 @@ Respect user preferences when given.
 
 ---
 
-## Step 6: Create Plan
+## Step 8: Create Plan
 
 Refer to `docs/agents/templates/plan-template.md` for plan structure.
 

@@ -26,11 +26,15 @@ alwaysApply: true
 
 1. **Check if `docs/status.md` exists**:
    - If YES: Read it to determine current phase and progress
-   - If NO: This is a new project → go to PHASE 1 Step 0 to create it
+   - If NO: This is a new project → go to PHASE 1 Step 1 to create it
 
-2. **If in BUILDING phase or later**: Also read `docs/plan.md` to refresh full context (requirements, GHERKIN scenarios, features, tech stack). This prevents context loss during long builds.
+2. **Check `docs/status.md` Pending Actions section**:
+   - If items exist → address them before continuing normal flow
+   - Feature additions → go to PHASE 1 Steps 3-5 to update Stories/GHERKIN, then resume
 
-3. **State current phase** at the start of your response:
+3. **If in BUILDING phase or later**: Also read `docs/plan.md` to refresh full context (requirements, GHERKIN scenarios, features, tech stack). This prevents context loss during long builds.
+
+4. **State current phase** at the start of your response:
    - [PHASE: PLANNING] - gathering requirements and job stories
    - [PHASE: BUILDING] - generating code
    - [PHASE: TESTING] - running/fixing tests
@@ -69,55 +73,55 @@ Do NOT:
 ## Phases Overview
 
 1. PLANNING - Gather requirements, create docs/plan.md
-2. BUILDING - Generate code in src/
+2. BUILDING - Create branch, generate code in src/
 3. TESTING - Run tests, fix failures (max 4 attempts)
 4. REVIEWING - Code review (skip if tests failed)
-5. DOCUMENTING - README, git commit
+5. DOCUMENTING - README, git commit, PR
 
 ## PHASE 1: PLANNING
 
-### Step 0: Initialize Status
+### Step 1: Initialize Status
 
-If `docs/status.md` does NOT exist:
-1. **Read template**: `docs/agents/templates/status-template.md`
-2. **Create**: `docs/status.md`
-3. Set Phase: PLANNING, Status: IN_PROGRESS
-4. Log: "Started PHASE 1: PLANNING"
+If `docs/status.md` doesn't exist, create it from template.
 
-**Reference**: `docs/agents/checklist.md` for detailed formats, examples, and tips.
+**Reference**: See `docs/agents/checklist.md` for details.
 
-### Step 1: Gather Requirements
+### Step 2: Gather Requirements
 
-Ask until you have: project_name, what_to_build, target_audience, problems_solved, auth_requirements, ui_ux_references.
+Ask until you have: project_name, what_to_build, target_audience, problems_solved, auth_requirements, ui_ux_references, performance_requirements (optional).
 
 **Reference**: See `docs/agents/checklist.md` for detailed format and examples.
 
-### Step 2: Gather Job Stories
+### Step 3: Gather Job Stories
 
 Ask user to describe situations (When/I want/So I can format).
 Keep asking until user has no more.
 
-### Step 3: Convert to GHERKIN Scenarios
+### Step 4: Convert to GHERKIN Scenarios
 
 Transform each job story into testable scenarios (Given/When/Then).
 Show to user for confirmation.
 
-### Step 4: Derive Features
+### Step 5: Derive Features
 
 Group related scenarios into features.
 Show to user: "Does this cover everything?"
 
-### Step 4.5: Identify External APIs
+### Step 6: Identify External APIs
 
-Identify needed external services from features.
-Confirm each with user before proceeding.
+Identify needed external services from features. Ask user for documentation links.
 
-### Step 5: Propose Tech Stack
+**Reference**: See `docs/agents/checklist.md` for details.
 
-Propose: tech_stack, test_runner, test_commands, database, deployment.
-User can override.
+### Step 7: Propose Tech Stack
 
-### Step 6: Create Plan
+Propose: tech_stack, test_runner, test_commands, database, deployment. 
+
+User can override any choice.
+
+**Reference**: See `docs/agents/checklist.md` for defaults and criteria.
+
+### Step 8: Create Plan
 
 1. **Read**: `docs/agents/templates/plan-template.md` for structure
 2. Create `docs/plan.md` adapting to project needs
@@ -129,17 +133,42 @@ DO NOT generate code until user explicitly says to proceed ("Build this plan", "
 
 If user requests changes → update plan → show summary → wait again.
 
+**On approval**:
+1. Update `docs/plan.md` Approval Status to "Approved" with timestamp
+2. Proceed to PHASE 2
+
 ## PHASE 2: BUILDING
+
+### Step 1: Create Branch
+
+Create git branch: `poc-{YYYY-MM-DD}-{project_name}-v{N}`
+
+This branch will be used for all work until final commit.
+
+### Step 2: Prepare
 
 1. **Read**: `docs/plan.md` (required - contains all specs)
 2. **Check if exists**: `docs/learnings.md`
    - If exists: Read FIRST, list what to preserve and what to fix
    - Confirm with user before proceeding
-3. Generate project structure in `src/`
-4. Generate code file by file based on plan
-5. Add TODO comments for external APIs that need verification
-6. Create `.env.example` with required variables
-7. Announce: "Code complete. Moving to testing."
+
+### Step 3: Generate Code
+
+1. Generate project structure in `src/`
+2. Generate code file by file based on plan
+3. Add TODO comments for external APIs that need verification
+
+### Step 4: Environment Setup
+
+1. Create `.env.example` with all required variables (actual env file format, not markdown)
+2. If using database with migrations:
+   - Generate migration files
+   - Apply migrations to development database
+   - Document migration commands in plan
+
+### Step 5: Complete
+
+Announce: "Code complete. Moving to testing."
 
 ## PHASE 3: TESTING
 
@@ -149,13 +178,21 @@ Create tests from GHERKIN scenarios (derived from job stories in plan.md).
 
 Include these test types:
 
-**Unit Tests** (test individual functions/components in isolation)
+**Unit Tests** (REQUIRED - test individual functions/components in isolation)
 - One function/component = one test file
 - Mock external dependencies
 
-**Integration Tests** (test multiple parts working together)
+**Integration Tests** (REQUIRED - test multiple parts working together)
 - Multiple components/modules together
 - API routes + database calls
+- Verify data flows correctly through the system
+
+**API Contract Tests** (REQUIRED for apps using external APIs)
+- For EACH external API endpoint the app calls:
+  - Test with realistic parameters
+  - Verify response structure matches code expectations
+  - Test error responses (401, 404, rate limit) are handled
+- Note: These may require valid API keys in test environment
 
 **API Health Checks** (verify external services respond)
 - Ping external APIs used in the app
@@ -170,8 +207,9 @@ Run full test suite using plan-specified command.
 On failure:
 1. Analyze ALL failing tests
 2. Fix source code (not tests, unless test is wrong)
-3. Re-run FULL suite
-4. Maximum 4 total attempts for the suite
+3. For logic/edge-case bugs: Add a test that would have caught it (skip for typos, missing imports)
+4. Re-run FULL suite
+5. Maximum 4 total attempts for the suite
 
 ### Step 4: Determine Outcome
 
@@ -202,6 +240,11 @@ Review all generated code against these criteria:
 - All sensitive values read from environment variables
 - User input is validated before use
 - No obvious injection vulnerabilities
+
+**External API Integration**
+- Verify API response shapes match code expectations
+- Check that all accessed properties actually exist on response objects
+- No hardcoded values when dynamic source of truth exists (e.g., don't hardcode token lists if API provides them)
 
 **Completeness**
 - All GHERKIN scenarios have corresponding implementation
@@ -236,34 +279,65 @@ After 2 iterations:
 
 ## PHASE 5: DOCUMENTING
 
-1. Generate:
-   - README.md (setup, features, env vars, usage)
-   - Dockerfile (if applicable)
-   - .github/workflows/ci.yml (run tests on push)
+### Step 1: Generate Docs
 
-2. Git:
-   - Create branch: poc-{YYYY-MM-DD}-{name}-v{N}
-   - Commit with semantic message
+1. **Generate project README.md** (REPLACES template README):
+   - What the project does
+   - Setup instructions with environment variable details
+   - How to run locally
+   - How to run tests
+   - Feature overview
 
-3. Show final status then STOP:
+2. **Show .env setup** to user:
+   ```
+   Create your .env file by copying .env.example:
+   
+   cp .env.example .env.local
+   
+   Then fill in these values:
+   [list each variable with description of where to get it]
+   ```
 
+3. **If auth includes Google OAuth**: Include setup instructions:
+   - How to create Google Cloud project
+   - How to enable OAuth consent screen
+   - Where to get client ID/secret
+   - Redirect URI configuration
+
+4. Generate Dockerfile (if applicable)
+
+5. Generate .github/workflows/ci.yml (run tests on push)
+
+### Step 2: Git Commit
+
+1. Stage all changes
+2. Commit with semantic message describing the build
+
+### Step 3: Show Final Status
+
+```
 ---
 BUILD COMPLETE
 
 Status: 🟢 GREEN or 🟡 YELLOW
-Branch: poc-{date}-{name}-v1
+Branch: poc-{date}-{name}-v{N}
 
 [If YELLOW: list what failed/incomplete]
 
 To run locally:
 [commands for this stack]
+
+Environment setup:
+cp .env.example .env.local
+# Then fill in: [list required vars]
 ---
+```
 
 ⛔ MANDATORY HUMAN APPROVAL REQUIRED
 
 Wait for explicit response:
 - "Looks good" → Merge to main, show deploy instructions, END
-- "Needs rework: {feedback}" → Create learnings.md, go to PHASE 2
+- "Needs rework: {feedback}" → Create learnings.md, return to PHASE 2
 
 ---
 
@@ -276,15 +350,37 @@ Wait for explicit response:
    - What needs fixing (prioritized by importance)
    - Explicit "do not change" list if user specified
 3. **Save as**: `docs/learnings.md`
-4. Create new branch: `poc-{date}-{name}-v{N+1}`
-5. Return to PHASE 2
+4. **Update status.md**:
+   - Phase: BUILDING
+   - Status: IN_PROGRESS
+   - Increment iteration to v{N+1}
+   - Log: "Rework requested, returning to PHASE 2"
+5. **Return to PHASE 2 Step 2** (branch already exists, just continue on it)
 6. Read `docs/learnings.md` FIRST before making any changes
 
 ### On "Looks good"
 
-1. Merge to main
+1. Merge branch to main
 2. Show deployment instructions
-3. Workflow COMPLETE
+3. Update status.md: Phase: COMPLETE, Status: COMPLETE
+4. Workflow COMPLETE
+
+---
+
+## Adding Features Mid-Project
+
+If user wants to add/edit/remove functionality after initial build:
+
+1. Add to `docs/status.md` Pending Actions:
+   - `[ ] Add feature: {description}`
+2. Return to PHASE 1 Steps 3-5:
+   - Update Job Stories for the new feature
+   - Generate new GHERKIN scenarios
+   - Update Features grouping
+3. Update `docs/plan.md` with new scenarios and features
+4. Return to PHASE 2 to implement
+
+This ensures traceability: every feature maps to job stories and GHERKIN scenarios.
 
 ---
 
@@ -294,9 +390,10 @@ Templates provide STRUCTURE and GUIDANCE, not rigid forms. Adapt to each project
 
 | Template | Read At | Creates | Purpose |
 |----------|---------|---------|---------|
+| `docs/agents/usage-guide.md` | - | - | Template usage instructions (for users) |
 | `docs/agents/checklist.md` | PHASE 1 (reference) | - | Formats, examples, detailed guidance |
-| `docs/agents/templates/status-template.md` | PHASE 1 Step 0 (if not exists) | `docs/status.md` | Track phase and progress |
-| `docs/agents/templates/plan-template.md` | PHASE 1 Step 6 | `docs/plan.md` | Project specification |
+| `docs/agents/templates/status-template.md` | PHASE 1 Step 1 (if not exists) | `docs/status.md` | Track phase and progress |
+| `docs/agents/templates/plan-template.md` | PHASE 1 Step 8 | `docs/plan.md` | Project specification |
 | `docs/agents/templates/failure-report-template.md` | PHASE 3 (on failure) | `docs/failure-report.md` | Document test failures |
 | `docs/agents/templates/learnings-template.md` | "Needs rework" | `docs/learnings.md` | Feedback for next iteration |
 

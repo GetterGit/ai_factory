@@ -76,6 +76,5 @@ If multiple issues share a root cause, note it here to fix systematically rather
 
 ## Iteration Tracking
 
-- Previous branch: [branch name]
-- New branch: [new branch name]
+- Branch: [branch name stays the same]
 - Iteration: v[N] → v[N+1]

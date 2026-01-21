@@ -30,19 +30,23 @@ This file tracks the current state of the PoC development. Updated by the agent 
 ## Checkpoints
 
 ### PHASE 1: PLANNING
+- [ ] Status initialized
 - [ ] Requirements gathered
 - [ ] Job stories collected
 - [ ] GHERKIN scenarios derived
 - [ ] Features grouped
+- [ ] External APIs identified
 - [ ] Tech stack proposed
 - [ ] Plan created (docs/plan.md)
 - [ ] **User approved**: [waiting / approved]
 
 ### PHASE 2: BUILDING
+- [ ] Git branch created
 - [ ] Plan read
 - [ ] Learnings read (if exists)
 - [ ] Code generated
 - [ ] .env.example created
+- [ ] Migrations applied (if database)
 
 ### PHASE 3: TESTING
 - [ ] Tests generated
@@ -58,9 +62,24 @@ This file tracks the current state of the PoC development. Updated by the agent 
 - [ ] README.md created
 - [ ] Dockerfile created (if applicable)
 - [ ] CI workflow created
-- [ ] Git branch created
 - [ ] Git commit made
 - [ ] **User approved**: [waiting / approved / needs rework]
+
+---
+
+## Pending Actions
+
+<!-- Agent: Check this section FIRST each message. Address items before normal flow. -->
+
+Items to address before continuing:
+
+- (none)
+
+<!-- Format for pending items:
+- [ ] Add feature: {description} → requires updating Stories/GHERKIN
+- [ ] Fix: {description} → specific fix needed
+- [ ] Clarify: {question} → need user input
+-->
 
 ---
 

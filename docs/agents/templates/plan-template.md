@@ -78,10 +78,15 @@ If auth is needed, document:
 
 ### External APIs
 
-If the project uses external services:
-- API name and purpose
-- Rate limits or pricing concerns
+If the project uses external services, document in table format:
+
+| API | Purpose | Version | Docs URL | Notes |
+|-----|---------|---------|----------|-------|
+| [name] | [what it's used for] | [e.g., v2] | [link if provided] | [rate limits, pricing, etc.] |
+
+For each API, include:
 - Fallback behavior if unavailable
+- Any authentication requirements
 
 ### UI/UX References
 
@@ -96,11 +101,33 @@ Explicit exclusions to prevent scope creep.
 
 List things that might seem related but are NOT part of this PoC.
 
+### Performance Requirements
+
+If the user specified SLA-type requirements:
+
+| Operation | Target |
+|-----------|--------|
+| [what] | [threshold] |
+
+Examples:
+- Data sync: < 30 seconds
+- Page load: < 2 seconds on 3G
+- API response: < 500ms
+
+All stated requirements are treated as equally important.
+
+### Database & Migrations
+
+If the project uses a database:
+- Database type and hosting (e.g., Supabase PostgreSQL, local SQLite)
+- Schema overview (main tables/collections)
+- Migration strategy (how to apply schema changes)
+- Seed data requirements (if any)
+
 ### Technical Constraints
 
 If there are specific requirements:
 - Browser/device support
-- Performance targets
 - Accessibility requirements
 - Existing systems to integrate with
 
