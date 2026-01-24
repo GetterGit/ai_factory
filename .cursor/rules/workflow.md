@@ -29,7 +29,7 @@ Skip to the section that applies to you. Workers: go to "WORKER" section.
 - Be "helpful" by jumping ahead in the workflow
 - Respond with solutions before gathering requirements
 - **NEVER write code yourself** - even for "minor" fixes. ALL code changes go through workers.
-- **NEVER edit source files** (.tsx, .ts, .js, .css, etc.) - spawn a worker instead
+- **NEVER edit source files** (.tsx, .ts, .js, .css, etc.) - delegate it to a worker of that specific task instead
 - **NEVER use edit tools on code** - your job is coordination, not implementation
 
 **The user chose this template for structured development. Respect the process.**
