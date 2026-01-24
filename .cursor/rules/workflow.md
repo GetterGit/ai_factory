@@ -292,6 +292,11 @@ After plan approval, decompose into Kanban tasks.
 
 2. **For each startable task:**
    - Call `start_workspace_session` via MCP with variant = "DEFAULT"
+   - **Copy env files to worktree** (env files are gitignored, won't exist in new worktrees):
+     ```bash
+     cp .env.local /tmp/vibe-kanban/worktrees/{task-id}/{repo-name}/.env.local 2>/dev/null || true
+     cp .env /tmp/vibe-kanban/worktrees/{task-id}/{repo-name}/.env 2>/dev/null || true
+     ```
    - Worker receives identity via `append_prompt` in profiles.json
    - Worker reads task requirements from Kanban task description
    - Update state.json: status → "inprogress"
@@ -350,6 +355,11 @@ The orchestrator runs a continuous monitoring loop:
    - When a task is merged (status → "done"), check its dependents
    - If any dependent now has ALL dependencies "done" → it's unblocked
    - Auto-start unblocked tasks via `start_workspace_session`
+   - **Copy env files to worktree** (same as initial start):
+     ```bash
+     cp .env.local /tmp/vibe-kanban/worktrees/{task-id}/{repo-name}/.env.local 2>/dev/null || true
+     cp .env /tmp/vibe-kanban/worktrees/{task-id}/{repo-name}/.env 2>/dev/null || true
+     ```
    - **Important**: Worktree is created from CURRENT feature branch, so it includes all merged dependency code
 
 4. **Batch human reviews:**
