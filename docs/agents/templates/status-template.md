@@ -7,10 +7,9 @@ This file tracks the current state of the PoC development. Updated by the agent 
 ## Current State
 
 **Project**: [project name from requirements]
-**Phase**: [PLANNING | BUILDING | TESTING | REVIEWING | DOCUMENTING | COMPLETE]
+**Phase**: [PLANNING | EXECUTION | REVIEWING | DOCUMENTING]
 **Status**: [IN_PROGRESS | BLOCKED | WAITING_FOR_APPROVAL | COMPLETE]
 **Branch**: [current branch name]
-**Iteration**: v[N]
 **Last Updated**: [timestamp]
 
 ---
@@ -20,10 +19,9 @@ This file tracks the current state of the PoC development. Updated by the agent 
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 1. PLANNING | ⬜ Not started / 🔄 In progress / ✅ Complete | |
-| 2. BUILDING | ⬜ Not started / 🔄 In progress / ✅ Complete | |
-| 3. TESTING | ⬜ Not started / 🔄 In progress / ✅ Complete / ⚠️ Failed | |
-| 4. REVIEWING | ⬜ Not started / 🔄 In progress / ✅ Complete / ⏭️ Skipped | |
-| 5. DOCUMENTING | ⬜ Not started / 🔄 In progress / ✅ Complete | |
+| 2. EXECUTION | ⬜ Not started / 🔄 In progress / ✅ Complete | |
+| 3. REVIEWING | ⬜ Not started / 🔄 In progress / ✅ Complete | |
+| 4. DOCUMENTING | ⬜ Not started / 🔄 In progress / ✅ Complete | |
 
 ---
 
@@ -40,52 +38,23 @@ This file tracks the current state of the PoC development. Updated by the agent 
 - [ ] Plan created (docs/plan.md)
 - [ ] **User approved**: [waiting / approved]
 
-### PHASE 2: BUILDING
-- [ ] Git branch created
-- [ ] Plan read
-- [ ] Learnings read (if exists)
-- [ ] Code generated
-- [ ] .env.example created
-- [ ] Migrations applied (if database)
+### PHASE 2: EXECUTION
+- [ ] Kanban tasks created
+- [ ] Workers spawned for ready tasks
+- [ ] Monitoring loop started
+- [ ] All tasks reached inreview or done
 
-### PHASE 3: TESTING
-- [ ] Tests generated
-- [ ] Tests run
-- [ ] Result: [PASS / FAIL after N attempts]
+### PHASE 3: REVIEWING
+- [ ] Auto-review by reviewer subagent
+- [ ] Human review completed
+- [ ] Tasks merged to feature branch
+- [ ] All tasks done
 
-### PHASE 4: REVIEWING
-- [ ] Code reviewed
-- [ ] Issues fixed
-- [ ] Tests re-run after fixes
-
-### PHASE 5: DOCUMENTING
+### PHASE 4: DOCUMENTING
+- [ ] Feature branch merged to main
 - [ ] README.md created
-- [ ] Dockerfile created (if applicable)
-- [ ] CI workflow created
+- [ ] Worktrees cleaned up
 - [ ] Git commit made
-- [ ] **User approved**: [waiting / approved / needs rework]
-
----
-
-## Pending Actions
-
-<!-- Agent: Check this section FIRST each message. Address items before normal flow. -->
-
-Items to address before continuing:
-
-- (none)
-
-<!-- Format for pending items:
-- [ ] Add feature: {description} → requires updating Stories/GHERKIN
-- [ ] Fix: {description} → specific fix needed
-- [ ] Clarify: {question} → need user input
--->
-
----
-
-## Blocking Issues
-
-List anything blocking progress.
 
 ---
 

@@ -1,0 +1,2 @@
+# This folder contains Vibe Kanban state files.
+# state.json is created at runtime and tracked for recovery.

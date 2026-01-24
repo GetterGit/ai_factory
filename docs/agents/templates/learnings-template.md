@@ -72,9 +72,3 @@ If multiple issues share a root cause, note it here to fix systematically rather
 5. **Verify fixes** - after changes, re-run tests to ensure nothing broke
 6. **Confirm before proceeding** - list planned changes and get user confirmation
 
----
-
-## Iteration Tracking
-
-- Branch: [branch name stays the same]
-- Iteration: v[N] → v[N+1]

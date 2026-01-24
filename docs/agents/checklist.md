@@ -2,7 +2,7 @@
 
 **Purpose**: Detailed reference for PHASE 1: PLANNING.
 
-This document contains formats, examples, and guidance for gathering requirements. The agent refers to this during planning steps. workflow.md contains the high-level flow.
+This document contains formats, examples, and guidance for gathering requirements. The orchestrator agent refers to this during planning steps. workflow.md contains the high-level flow.
 
 ---
 
@@ -17,7 +17,6 @@ If `docs/status.md` does NOT exist:
    - Status: IN_PROGRESS
    - Project: [leave blank until Step 2]
    - Branch: [leave blank until PHASE 2]
-   - Iteration: v1
 4. **Log in History**: "Started PHASE 1: PLANNING"
 
 No user input required for this step.
@@ -308,8 +307,62 @@ GHERKIN scenarios: [count] testable scenarios
 
 ### Human Gate
 
-⛔ **MANDATORY**: Do NOT generate code until user explicitly approves.
+⛔ **MANDATORY**: Do NOT decompose into tasks or start workers until user explicitly approves the plan.
 
-Valid approval phrases: "Build this plan", "Approved", "Go ahead", "Let's build"
+Valid approval phrases: "Build this plan", "Approved", "Go ahead", "Let's build", "Start"
 
 If user requests changes → update plan → show summary → wait again.
+
+---
+
+## Kanban Integration (After Plan Approval)
+
+These steps happen automatically after user approves the plan.
+
+### Environment Verification
+
+Before decomposing into tasks:
+
+1. **Check rules are committed:**
+   ```bash
+   git ls-files --error-unmatch .cursor/rules/workflow.md
+   ```
+   - If fails: ERROR - commit rules first
+
+2. **Check Vibe Kanban running:**
+   - Try MCP connection
+   - If fails: Start `npx vibe-kanban` in background
+   - Retry with backoff (2s, 4s, 8s, max 4 attempts)
+
+### Task Decomposition
+
+Break plan into discrete tasks based on **job stories and features** from plan.md:
+
+| Guideline | Reason |
+|-----------|--------|
+| One task per job story or feature | Natural isolation, maps to existing GHERKIN scenarios |
+| Clear acceptance criteria | Derived from GHERKIN scenarios for that story |
+| Explicit dependencies | Which features need others to exist first |
+| Self-contained | Worker can execute independently with clear scope |
+
+**Decomposition sources:**
+- Job stories → one task each (unless trivially small, then group)
+- Features → if a feature covers multiple job stories, keep as one task
+- Shared infrastructure → separate task if multiple features depend on it (e.g., "Set up database schema")
+
+### Dependency Identification
+
+For each task, determine:
+- Which tasks must complete before this one can start
+- Keep chains shallow when possible (≤3 deep)
+- Validate no circular dependencies (A→B→A)
+
+### State File
+
+After creating tasks, save to `.vibe-kanban/state.json`.
+
+See `docs/agents/kanban-integration.md` → State File Format for the complete structure.
+
+Key points:
+- `description`: Include full job story text
+- `acceptance_criteria`: Full GHERKIN scenarios (Given/When/Then)

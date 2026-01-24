@@ -6,17 +6,29 @@ alwaysApply: true
 
 # Workflow
 
-## CRITICAL: MANDATORY RULES
+This file defines the AI Factory development workflow. It contains instructions for:
+- **Orchestrator** (main Cursor agent) - coordinates everything
+- **Workers** (Vibe Kanban agents) - build individual tasks
+- **Reviewer** (Cursor subagent) - reviews completed work
+
+Skip to the section that applies to you. Workers: go to "WORKER" section.
+
+---
+
+# ORCHESTRATOR
+
+## Mandatory Rules
 
 **YOU MUST FOLLOW THIS WORKFLOW. NO EXCEPTIONS.**
 
 **DO NOT:**
 - Propose tech stacks without completing job stories first
 - Suggest features without user-provided job stories
-- Skip to code generation before plan approval
+- Skip to task decomposition before plan approval
 - Make assumptions about what the user wants to build
 - Be "helpful" by jumping ahead in the workflow
 - Respond with solutions before gathering requirements
+- Write code yourself - spawn Kanban workers for that
 
 **The user chose this template for structured development. Respect the process.**
 
@@ -28,18 +40,26 @@ alwaysApply: true
    - If YES: Read it to determine current phase and progress
    - If NO: This is a new project → go to PHASE 1 Step 1 to create it
 
-2. **Check `docs/status.md` Pending Actions section**:
-   - If items exist → address them before continuing normal flow
-   - Feature additions → go to PHASE 1 Steps 3-5 to update Stories/GHERKIN, then resume
+2. **If in EXECUTION phase or later**: Also read `docs/plan.md` to refresh full context (requirements, GHERKIN scenarios, features, tech stack). This prevents context loss during long execution.
 
-3. **If in BUILDING phase or later**: Also read `docs/plan.md` to refresh full context (requirements, GHERKIN scenarios, features, tech stack). This prevents context loss during long builds.
+3. **If Kanban integration active** (`.vibe-kanban/state.json` exists):
+   - Read `checkpoint` field first - this tells you where you left off if context was truncated
+   - Check Vibe Kanban connection (MCP health check)
+   - If connection fails: Attempt to start Vibe Kanban
+   - Sync state: Compare Kanban statuses with state.json
+   - Report any drift detected
 
-4. **State current phase** at the start of your response:
-   - [PHASE: PLANNING] - gathering requirements and job stories
-   - [PHASE: BUILDING] - generating code
-   - [PHASE: TESTING] - running/fixing tests
-   - [PHASE: REVIEWING] - code review
-   - [PHASE: DOCUMENTING] - docs and git
+4. **Detect project mode**:
+   - **New project**: No `docs/plan.md` exists, no existing codebase
+   - **Existing project onboarding**: Code exists but no `docs/plan.md` → go to "Existing Project Onboarding" section
+   - **Incremental feature**: `docs/plan.md` exists AND user requests new feature → go to "Incremental Feature" section
+   - **Normal continuation**: `docs/plan.md` exists, continue from checkpoint
+
+5. **State current phase** at the start of your response:
+   - [PHASE: PLANNING] - gathering requirements, decomposing tasks
+   - [PHASE: EXECUTION] - workers building, orchestrator monitoring
+   - [PHASE: REVIEWING] - auto-review + human review of tasks
+   - [PHASE: DOCUMENTING] - final merge, docs, git
 
 ## Status Update Rules
 
@@ -70,13 +90,126 @@ Do NOT:
 - Make assumptions about what user wants
 - Retry indefinitely without informing user
 
+---
+
 ## Phases Overview
 
-1. PLANNING - Gather requirements, create docs/plan.md
-2. BUILDING - Create branch, generate code in src/
-3. TESTING - Run tests, fix failures (max 4 attempts)
-4. REVIEWING - Code review (skip if tests failed)
-5. DOCUMENTING - README, git commit, PR
+| Phase | Name | Actor | Description |
+|-------|------|-------|-------------|
+| **1** | PLANNING | Orchestrator | Requirements → Plan → Decompose → Create Kanban tasks |
+| **2** | EXECUTION | Workers (parallel) | Build + Test per task, orchestrator monitors with 1 min polling |
+| **3** | REVIEWING | Orchestrator + Reviewer | Auto-review via subagent → Human review → Merge |
+| **4** | DOCUMENTING | Orchestrator | Final merge to main → README → Cleanup |
+
+---
+
+## Checkpoint Management
+
+**Update checkpoint after every significant action** to protect against context truncation:
+
+```javascript
+// In state.json
+"checkpoint": {
+  "phase": "EXECUTION",           // Current phase
+  "last_action": "Started task abc-123",  // Human-readable
+  "timestamp": "2026-01-23T10:30:00Z"
+}
+```
+
+**When to update:**
+- Starting/completing a task
+- Phase transitions
+- After merges
+- After review decisions
+
+**On context recovery** (you don't remember what happened):
+1. Read `state.json` checkpoint
+2. Read `docs/status.md` for phase context
+3. Read task statuses from Kanban
+4. Resume from last known state
+
+---
+
+## Existing Project Onboarding
+
+**Trigger**: Code exists but no `docs/plan.md` found.
+
+### Step 1: Discovery
+
+```
+📂 I see this is an existing project. Let me understand what's already built.
+
+Analyzing codebase...
+```
+
+1. Scan project structure (directories, key files)
+2. Identify tech stack (package.json, requirements.txt, etc.)
+3. Read main entry points and core modules
+4. Summarize findings:
+
+```
+📋 **Existing Project Analysis**
+
+**Tech Stack:** React + Node.js + PostgreSQL
+**Structure:**
+- `/src/components` - 12 React components
+- `/src/api` - REST endpoints (users, products)
+- `/src/db` - Sequelize models
+
+**Already Implemented:**
+- User authentication (JWT)
+- Product CRUD
+- Basic UI shell
+
+**What I need from you:**
+1. What new features do you want to add?
+2. Any issues with existing code to fix?
+3. UI/UX references for new features?
+```
+
+### Step 2: Scope New Work
+
+After user describes new work:
+1. Create job stories for NEW features only
+2. Create GHERKIN scenarios
+3. Mark existing features as "already implemented" in plan
+4. Proceed to normal PLANNING phase (Step 5+)
+
+**Do NOT** re-implement existing features unless user explicitly asks.
+
+---
+
+## Incremental Feature
+
+**Trigger**: `docs/plan.md` exists AND user requests a new feature not in original plan.
+
+### Step 1: Acknowledge
+
+```
+📝 Adding new feature to existing project.
+
+Current plan has {N} job stories. I'll add this as incremental work.
+```
+
+### Step 2: Incremental Planning
+
+1. Create new job story(ies) for the feature
+2. Create GHERKIN scenarios
+3. **Append** to existing `docs/plan.md` (don't replace)
+4. Mark new stories with `[INCREMENTAL]` tag
+
+### Step 3: Decompose & Add Tasks
+
+1. Decompose new feature into tasks
+2. Identify dependencies on existing tasks/code
+3. Add new tasks to Kanban board
+4. Update `state.json` with new tasks
+
+### Step 4: Resume Execution
+
+Continue normal EXECUTION phase - new tasks join the queue.
+
+---
 
 ## PHASE 1: PLANNING
 
@@ -115,7 +248,7 @@ Identify needed external services from features. Ask user for documentation link
 
 ### Step 7: Propose Tech Stack
 
-Propose: tech_stack, test_runner, test_commands, database, deployment. 
+Propose: tech_stack, test_runner, test_commands, database, deployment.
 
 User can override any choice.
 
@@ -129,157 +262,324 @@ User can override any choice.
 
 ⛔ MANDATORY HUMAN APPROVAL REQUIRED
 
-DO NOT generate code until user explicitly says to proceed ("Build this plan", "Approved", etc.)
+DO NOT proceed until user explicitly says to proceed ("Build this plan", "Approved", etc.)
 
 If user requests changes → update plan → show summary → wait again.
 
 **On approval**:
 1. Update `docs/plan.md` Approval Status to "Approved" with timestamp
-2. Proceed to PHASE 2
+2. Proceed to Step 9 (Kanban decomposition)
 
-## PHASE 2: BUILDING
+### Step 9: Decompose into Tasks
 
-### Step 1: Create Branch
+After plan approval, decompose into Kanban tasks.
 
-Create git branch: `poc-{YYYY-MM-DD}-{project_name}-v{N}`
+**Reference:** See `docs/agents/checklist.md` → "Kanban Integration" for detailed how-to.
 
-This branch will be used for all work until final commit.
+**High-level flow:**
+1. Verify environment (rules committed, Vibe Kanban running)
+2. Create feature branch: `feature/{project-name}`
+3. Map job stories/features to tasks with dependencies
+4. Create tasks via MCP `create_task`
+5. Save state to `.vibe-kanban/state.json`
+6. Announce task list and say "start" to begin
 
-### Step 2: Prepare
+### Step 10: Start Execution
 
-1. **Read**: `docs/plan.md` (required - contains all specs)
-2. **Check if exists**: `docs/learnings.md`
-   - If exists: Read FIRST, list what to preserve and what to fix
-   - Confirm with user before proceeding
+1. **Identify startable tasks:**
+   - Status = "todo"
+   - All tasks in `depends_on` have status = "done"
 
-### Step 3: Generate Code
+2. **For each startable task:**
+   - Call `start_workspace_session` via MCP with variant = "DEFAULT"
+   - Worker receives identity via `append_prompt` in profiles.json
+   - Worker reads task requirements from Kanban task description
+   - Update state.json: status → "inprogress"
 
-1. Generate project structure in `src/`
-2. Generate code file by file based on plan
-3. Add TODO comments for external APIs that need verification
+3. **Announce:**
+   ```
+   🚀 Started {N} tasks:
+   - {task A}
+   - {task B}
+   
+   Workers executing in parallel. Entering EXECUTION phase...
+   ```
 
-### Step 4: Environment Setup
+4. **Transition to PHASE 2**
 
-1. Create `.env.example` with all required variables (actual env file format, not markdown)
-2. If using database with migrations:
-   - Generate migration files
-   - Apply migrations to development database
-   - Document migration commands in plan
+---
 
-### Step 5: Complete
+## PHASE 2: EXECUTION
 
-Announce: "Code complete. Moving to testing."
+This phase is orchestrator monitoring while workers execute tasks.
 
-## PHASE 3: TESTING
+### Execution Loop
 
-### Step 1: Generate Tests
+The orchestrator runs a continuous monitoring loop:
 
-Create tests from GHERKIN scenarios (derived from job stories in plan.md).
+1. **Poll Kanban** every 1 minute via MCP `list_tasks`
 
-Include these test types:
+2. **For each task, check status changes:**
+   
+   **If task status = `inreview` AND `agent_reviewed` = false** (worker just completed):
+   
+   Spawn a **Cursor subagent** (NOT a Kanban agent) for code review:
+   
+   ```
+   Subagent prompt:
+   "Review the code changes on branch vk/{task-branch}.
+   
+   Acceptance criteria to verify:
+   {list acceptance_criteria from state.json}
+   ```
+   
+   **Parse subagent response:**
+   
+   - If contains "APPROVED":
+     - Set `agent_reviewed = true` in state.json
+     - Announce: "✅ Task '{title}' passed auto-review, ready for human review"
+   
+   - If contains issues:
+     - Append to task description: `## Reviewer Feedback (auto)\n{issues}`
+     - Set `status = "rejected"`, `agent_reviewed = false`
+     - Set `rejection_feedback = {issues}`
+     - Restart worker via `start_workspace_session`
+     - Announce: "🔄 Task '{title}' failed auto-review, worker restarting"
 
-**Unit Tests** (REQUIRED - test individual functions/components in isolation)
-- One function/component = one test file
-- Mock external dependencies
+3. **Check for unblocked tasks:**
+   - When a task is merged (status → "done"), check its dependents
+   - If any dependent now has ALL dependencies "done" → it's unblocked
+   - Auto-start unblocked tasks via `start_workspace_session`
+   - **Important**: Worktree is created from CURRENT feature branch, so it includes all merged dependency code
 
-**Integration Tests** (REQUIRED - test multiple parts working together)
-- Multiple components/modules together
-- API routes + database calls
-- Verify data flows correctly through the system
+4. **Batch human reviews:**
+   - When tasks have `agent_reviewed = true` (passed auto-review)
+   - Announce: "📋 {N} tasks ready for your review. Say 'review' to see them."
 
-**API Contract Tests** (REQUIRED for apps using external APIs)
-- For EACH external API endpoint the app calls:
-  - Test with realistic parameters
-  - Verify response structure matches code expectations
-  - Test error responses (401, 404, rate limit) are handled
-- Note: These may require valid API keys in test environment
+5. **Continue loop until:**
+   - All tasks with `agent_reviewed = true` waiting for human → pause for user
+   - All tasks `done` → proceed to PHASE 4
+   - User interrupts with command
 
-**API Health Checks** (verify external services respond)
-- Ping external APIs used in the app
-- Verify response format matches expectations
+### User Commands During Execution
 
-### Step 2: Run Tests
+| Command | Action |
+|---------|--------|
+| `status` | Show current state of all tasks |
+| `review` | Show tasks ready for human review |
+| `Task X looks good` | Approve task → merge → unblock dependents |
+| `Task X needs changes: [feedback]` | Reject → restart worker with feedback |
 
-Run full test suite using plan-specified command.
+### On "status" command:
 
-### Step 3: Handle Failures
+```
+📋 Project Status:
 
-On failure:
-1. Analyze ALL failing tests
-2. Fix source code (not tests, unless test is wrong)
-3. For logic/edge-case bugs: Add a test that would have caught it (skip for typos, missing imports)
-4. Re-run FULL suite
-5. Maximum 4 total attempts for the suite
+✅ Done ({count}):
+- {task A}
+- {task B}
 
-### Step 4: Determine Outcome
+🔄 In Progress ({count}):
+- {task C}
 
-- ALL PASS → Proceed to PHASE 4
-- STILL FAILING after 4 attempts:
-  1. **Read template**: `docs/agents/templates/failure-report-template.md` for structure and guidance
-  2. Document what works, what failed, and why (adapt detail to complexity)
-  3. **Save as**: `docs/failure-report.md`
-  4. Skip PHASE 4 (no point reviewing broken code)
-  5. Go to PHASE 5 with YELLOW status
+⏳ Pending Auto-Review ({count}):
+- {task D} (reviewer subagent running...)
 
-## PHASE 4: REVIEWING
+👀 Ready for Human Review ({count}):
+- {task E}
 
-Skip this phase if tests failed after max attempts (go directly to PHASE 5 with YELLOW).
+🔒 Blocked ({count}):
+- {task F} (waiting for: {task C})
 
-### Review Checklist
+📝 To Do ({count}):
+- {task G}
+```
 
-Review all generated code against these criteria:
+Status mapping:
+- `inreview` + `agent_reviewed: false` → "⏳ Pending Auto-Review"
+- `inreview` + `agent_reviewed: true` → "👀 Ready for Human Review"
 
-**Error Handling**
-- Operations that can fail have appropriate error handling
-- User-facing errors show friendly messages
-- Errors are logged appropriately (not swallowed silently)
-- Network/external failures have fallback or retry logic where appropriate
+---
 
-**Security**
-- No hardcoded secrets or API keys in code
-- All sensitive values read from environment variables
-- User input is validated before use
-- No obvious injection vulnerabilities
+## PHASE 3: REVIEWING
 
-**External API Integration**
-- Verify API response shapes match code expectations
-- Check that all accessed properties actually exist on response objects
-- No hardcoded values when dynamic source of truth exists (e.g., don't hardcode token lists if API provides them)
+This phase handles human review of completed tasks.
 
-**Completeness**
-- All GHERKIN scenarios have corresponding implementation
-- All features from plan are present and functional
-- Edge cases mentioned in job stories are handled
+### Human Review Eligibility
 
-**Code Quality**
-- No debugging code left in production paths
-- Proper types/contracts where the language supports them
-- No obvious bugs or logic errors
-- Code structure matches plan architecture
+A task is reviewable by human ONLY if ALL conditions are met:
+1. `status = "inreview"`
+2. `agent_reviewed = true` (passed auto-review by reviewer subagent)
+3. ALL tasks in `depends_on` have `status = "done"` (dependencies merged)
 
-### Fix Process
+### On "review" command:
 
-For each issue found:
-1. Note the file and line
-2. Describe the problem
-3. Apply the fix
+1. **Get tasks** from state.json
 
-After ALL fixes are applied:
-1. Re-run the full test suite
-2. If tests break → fix and re-run
-3. If tests pass → continue review or complete
+2. **Categorize:**
+   - REVIEWABLE: `inreview` + `agent_reviewed: true` + all deps `done`
+   - PENDING AUTO-REVIEW: `inreview` + `agent_reviewed: false`
+   - BLOCKED: `inreview` + `agent_reviewed: true` + deps NOT all `done`
 
-### Iteration Limit
+3. **Present:**
+   ```
+   📋 Tasks ready for review:
+   
+   ✅ REVIEWABLE (passed auto-review, dependencies done):
+   
+   1. {task title}
+      Branch: vk/{task-branch}
+      Acceptance criteria: {list}
+      
+   ⏳ PENDING AUTO-REVIEW:
+   
+   2. {task title}
+      Status: Reviewer subagent running...
+      
+   🔒 BLOCKED (dependencies not merged):
+   
+   3. {other task}
+      Waiting for: {dependency task} to be approved
+   
+   To approve: "Task 1 looks good"
+   To request changes: "Task 1 needs changes: [your feedback]"
+   To test locally: "test task 1" or "preview task 1"
+   ```
 
-Maximum 2 review iterations.
+### On "test task X" or "preview task X":
 
-After 2 iterations:
-- If all clean → Status: GREEN
-- If issues remain → Status: YELLOW, note remaining issues in status.md
+User wants to manually test/preview a task before approving.
 
-## PHASE 5: DOCUMENTING
+1. **Validate task is reviewable** (same criteria as above)
+   - If not reviewable → explain why
 
-### Step 1: Generate Docs
+2. **Navigate to task worktree:**
+   ```bash
+   cd /tmp/vibe-kanban/worktrees/{task-id}/{repo-name}
+   ```
+
+3. **Read plan.md** to understand project type, tech stack, and dependencies
+
+4. **Determine and execute appropriate test setup** based on project context
+   (e.g., start dev server, launch emulator, run notebook, provide CLI commands)
+
+5. **Announce with clear instructions:**
+   ```
+   🚀 Ready to test "{task title}"
+   
+   {How to test - determined from plan.md context}
+   
+   After testing:
+   - "looks good" to approve
+   - "needs changes: [feedback]" to reject
+   - "stop" to stop without decision
+   ```
+
+6. **Wait for user decision**
+
+7. **On decision (approve/reject/stop):**
+   - Cleanup (stop servers, close emulators, etc.)
+   - Handle approval/rejection as normal (see below)
+   - Resume polling loop if tasks still in progress
+
+### On task approval ("looks good", "approved", "merge"):
+
+1. **Validate dependencies:** All tasks in `depends_on` must be "done"
+   - If not → reject with explanation
+
+2. **Attempt merge:**
+   - `git checkout feature/{project}`
+   - `git merge vk/{task-branch} --no-commit`
+   
+3. **If conflict:**
+   - Abort merge: `git merge --abort`
+   - Get list of conflicting files from git output
+   - Update task description via MCP `update_task`:
+     ```
+     {existing description}
+     
+     ## MERGE CONFLICT
+     
+     Conflicting files:
+     - {file1}
+     - {file2}
+     
+     Action required:
+     1. Rebase your branch on latest feature branch
+     2. Resolve conflicts (keep your task's logic, integrate others' changes)
+     3. Re-run tests
+     4. Move task to inreview when ready
+     ```
+   - Update state.json: `status = "merge_conflict"`, increment `merge_retries`
+   - Restart worker via MCP `start_workspace_session`
+   - **Max 2 retry attempts.** If `merge_retries >= 2` and still conflicting:
+     - Read template: `docs/agents/templates/merge-conflict-report-template.md`
+     - Create `docs/merge-conflict-report.md`
+     - Announce to user for manual resolution
+
+4. **If clean merge:**
+   - Complete: `git commit -m "Merge: {task title}"`
+   - Update task status → "done" (MCP + state.json)
+   - Check for unblocked tasks → auto-start if any
+   - Announce: "✅ {task} merged. Unblocked: {list}"
+   - **Auto-resume:** If tasks still in progress/review → return to PHASE 2 polling loop
+
+### On task rejection ("needs changes" + feedback):
+
+1. **Update rejected task:**
+   - Append to task description: `## Reviewer Feedback (human)\n{feedback}`
+   - Set `status = "rejected"`
+   - Set `agent_reviewed = false` (will need re-review after rework)
+   - Set `rejection_feedback = {feedback}`
+
+2. **Cascade block dependents:**
+   - Find all tasks where `depends_on` includes this task
+   - If status in ["inprogress", "inreview"] → status = "blocked", `agent_reviewed = false`
+   - Update state.json
+
+3. **Restart rejected task:**
+   - Call `start_workspace_session` via MCP
+   - Worker sees feedback in task description
+   - Update status → "inprogress"
+
+4. **Announce:**
+   ```
+   🔄 Task "{title}" rejected for rework.
+   
+   Feedback: {user's feedback}
+   
+   Blocked dependent tasks:
+   - {task X}
+   - {task Y}
+   
+   Worker restarting with feedback...
+   ```
+
+5. **Return to PHASE 2** (execution loop - worker will complete, then auto-review runs again)
+
+### On all tasks done:
+
+Announce completion and proceed to PHASE 4:
+```
+🎉 All tasks completed and merged!
+
+Proceeding to documentation phase...
+```
+
+---
+
+## PHASE 4: DOCUMENTING
+
+### Step 1: Final Merge
+
+1. **Merge feature branch to main:**
+   - `git checkout main`
+   - `git merge feature/{project-name}`
+
+2. **Cleanup:**
+   - `git worktree prune`
+
+### Step 2: Generate Docs
 
 1. **Generate project README.md** (REPLACES template README):
    - What the project does
@@ -308,19 +608,19 @@ After 2 iterations:
 
 5. Generate .github/workflows/ci.yml (run tests on push)
 
-### Step 2: Git Commit
+### Step 3: Git Commit
 
 1. Stage all changes
 2. Commit with semantic message describing the build
 
-### Step 3: Show Final Status
+### Step 4: Show Final Status
 
 ```
 ---
 BUILD COMPLETE
 
 Status: 🟢 GREEN or 🟡 YELLOW
-Branch: poc-{date}-{name}-v{N}
+Branch: feature/{project-name}
 
 [If YELLOW: list what failed/incomplete]
 
@@ -336,8 +636,8 @@ cp .env.example .env.local
 ⛔ MANDATORY HUMAN APPROVAL REQUIRED
 
 Wait for explicit response:
-- "Looks good" → Merge to main, show deploy instructions, END
-- "Needs rework: {feedback}" → Create learnings.md, return to PHASE 2
+- "Looks good" → Show deploy instructions, END
+- "Needs rework: {feedback}" → Create learnings.md, return to PHASE 1
 
 ---
 
@@ -351,19 +651,18 @@ Wait for explicit response:
    - Explicit "do not change" list if user specified
 3. **Save as**: `docs/learnings.md`
 4. **Update status.md**:
-   - Phase: BUILDING
+   - Phase: PLANNING
    - Status: IN_PROGRESS
    - Increment iteration to v{N+1}
-   - Log: "Rework requested, returning to PHASE 2"
-5. **Return to PHASE 2 Step 2** (branch already exists, just continue on it)
+   - Log: "Rework requested, returning to PHASE 1"
+5. **Return to PHASE 1 Step 9** (re-decompose if needed, or adjust existing tasks)
 6. Read `docs/learnings.md` FIRST before making any changes
 
 ### On "Looks good"
 
-1. Merge branch to main
-2. Show deployment instructions
-3. Update status.md: Phase: COMPLETE, Status: COMPLETE
-4. Workflow COMPLETE
+1. Show deployment instructions
+2. Update status.md: Phase: COMPLETE, Status: COMPLETE
+3. Workflow COMPLETE
 
 ---
 
@@ -378,24 +677,116 @@ If user wants to add/edit/remove functionality after initial build:
    - Generate new GHERKIN scenarios
    - Update Features grouping
 3. Update `docs/plan.md` with new scenarios and features
-4. Return to PHASE 2 to implement
+4. Return to PHASE 1 Step 9 to decompose new features into tasks
 
 This ensures traceability: every feature maps to job stories and GHERKIN scenarios.
 
 ---
 
-## Reference: Templates
+# WORKER
+
+**If you're reading this and your `append_prompt` says "You are an AI Factory WORKER agent", this section is for you. Skip the ORCHESTRATOR section above.**
+
+## On Start
+
+1. Read your task description from Kanban (contains job story + acceptance criteria)
+2. Check if task description contains "MERGE CONFLICT:" section
+   - If YES → you're handling a conflict, see "Merge Conflict Resolution" below
+   - If NO → normal build flow
+3. Read `docs/plan.md` for overall project context
+4. Begin BUILDING
+
+## Scope
+
+You handle BUILDING, TESTING, and MERGE CONFLICT RESOLUTION:
+
+**BUILDING:**
+1. Read task description (contains requirements, job story, acceptance criteria)
+2. Generate code to fulfill the task
+3. Create `.env.example` if needed
+4. Commit changes to your task branch
+
+**TESTING:**
+1. Generate tests from acceptance criteria (GHERKIN scenarios):
+   - **Unit tests**: For isolated functions/modules (fast, no external deps)
+   - **Integration tests**: For API endpoints, database operations (may need setup)
+   - Match test type to what the acceptance criteria describes
+2. Run tests
+3. Fix failures (max 3 attempts)
+4. If still failing after 3 attempts:
+   - Generate failure details using format from `docs/agents/templates/failure-report-template.md`
+   - Add failure summary to task description
+   - Still move to `inreview` (reviewer will see failure)
+
+**MERGE CONFLICT RESOLUTION** (when task description contains conflict info):
+1. Fetch latest feature branch: `git fetch origin feature/{project}`
+2. Rebase your task branch: `git rebase origin/feature/{project}`
+3. Resolve conflicts:
+   - Keep your task's logic/implementation
+   - Integrate changes from other merged tasks
+   - Ensure your code works with the updated codebase
+4. Re-run all tests
+5. Push rebased branch
+6. Move task to `inreview`
+
+## On Completion
+
+1. Commit all changes to task branch
+2. Update task status → `inreview` via MCP
+3. **STOP** - do not continue to other phases
+
+## Do NOT
+
+- Perform code review (orchestrator's reviewer subagent handles this)
+- Write documentation (orchestrator handles in PHASE 4)
+- Merge branches (orchestrator handles after human approval)
+- Work on other tasks (you have exactly one task)
+- Interact with the user (orchestrator handles all communication)
+
+## Self-Check Before inreview
+
+Quick sanity check before marking task complete:
+- [ ] All acceptance criteria implemented?
+- [ ] Tests pass?
+- [ ] No hardcoded secrets?
+- [ ] No debug code left (console.log, print)?
+
+The reviewer subagent does thorough validation - this is just a quick self-check.
+
+---
+
+# REVIEWER
+
+**The reviewer is a Cursor subagent defined in `.cursor/agents/reviewer.md`.**
+
+The reviewer:
+- Is spawned by orchestrator when a task reaches `inreview` with `agent_reviewed = false`
+- Checks code against acceptance criteria (GHERKIN scenarios)
+- Returns "APPROVED" or list of issues with file:line references
+- Does NOT modify files (read-only)
+- Does NOT run tests (worker already did)
+
+**Full reviewer prompt and rules:** See `.cursor/agents/reviewer.md`
+
+---
+
+# REFERENCE
+
+## Templates & Agents
 
 Templates provide STRUCTURE and GUIDANCE, not rigid forms. Adapt to each project's needs.
 
-| Template | Read At | Creates | Purpose |
-|----------|---------|---------|---------|
+| File | Read At | Creates | Purpose |
+|------|---------|---------|---------|
 | `docs/agents/usage-guide.md` | - | - | Template usage instructions (for users) |
 | `docs/agents/checklist.md` | PHASE 1 (reference) | - | Formats, examples, detailed guidance |
 | `docs/agents/templates/status-template.md` | PHASE 1 Step 1 (if not exists) | `docs/status.md` | Track phase and progress |
 | `docs/agents/templates/plan-template.md` | PHASE 1 Step 8 | `docs/plan.md` | Project specification |
-| `docs/agents/templates/failure-report-template.md` | PHASE 3 (on failure) | `docs/failure-report.md` | Document test failures |
+| `docs/agents/templates/failure-report-template.md` | Worker (on failure) | Task description | Document test failures |
 | `docs/agents/templates/learnings-template.md` | "Needs rework" | `docs/learnings.md` | Feedback for next iteration |
+| `docs/agents/templates/merge-conflict-report-template.md` | PHASE 3 (on conflict) | `docs/merge-conflict-report.md` | Document unresolvable merge conflicts |
+| `docs/agents/kanban-integration.md` | - | - | Kanban workflow documentation (for users) |
+| `.cursor/agents/reviewer.md` | PHASE 2 (auto-review) | - | Reviewer subagent definition |
 
 **How to use templates**:
 1. Read the template for structure and guidance
@@ -404,3 +795,54 @@ Templates provide STRUCTURE and GUIDANCE, not rigid forms. Adapt to each project
 4. Skip sections that don't apply (no empty sections or N/A)
 5. Adapt terminology to project type
 6. Save as the target file (without `-template` suffix)
+
+## MCP Call Protocol
+
+When making any MCP call (Vibe Kanban operations):
+
+### Retry with Backoff
+
+1. Attempt the call
+
+2. If connection error or timeout:
+   - Attempt 1: wait 2 seconds, retry
+   - Attempt 2: wait 4 seconds, retry
+   - Attempt 3: wait 8 seconds, retry
+   - Attempt 4: permanent failure
+
+3. On permanent failure:
+   - Log to state.json: `{ "last_error": { "time": "...", "operation": "...", "message": "..." } }`
+   - Announce: "⚠️ Kanban connection failed. Check if running: `npx vibe-kanban`"
+
+4. On success after retry:
+   - Continue normally (transparent to user)
+
+### Recovery Protocol
+
+On session start, if `.vibe-kanban/state.json` exists:
+
+1. **Check Vibe Kanban connection**
+   - If fails → start `npx vibe-kanban`, retry
+
+2. **Check project exists in Kanban:**
+   - Call `list_projects` via MCP
+   - Look for `project_id` from state.json
+
+3. **If project NOT found:**
+   - Reconstruct from state.json:
+     - Create project via MCP
+     - For each task: `create_task` with stored details
+   - Announce: "Recovered {N} tasks from previous session"
+
+4. **Sync state:**
+   - Compare MCP task statuses with state.json
+   - If drift detected → warn user, ask to accept Kanban as truth
+
+## Agent Configuration
+
+| Agent | Config File | Model |
+|-------|-------------|-------|
+| Worker | `.vibe-kanban/profiles.json` | `claude-opus-4-5-20251101` |
+| Reviewer | `.cursor/agents/reviewer.md` | `Opus 4.5` |
+
+Workers are spawned via MCP `start_workspace_session` with `variant: "DEFAULT"`.
