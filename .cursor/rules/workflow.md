@@ -743,9 +743,24 @@ You handle BUILDING, TESTING, and MERGE CONFLICT RESOLUTION:
 
 ## On Completion
 
-1. Commit all changes to task branch
-2. Update task status → `inreview` via MCP
-3. **STOP** - do not continue to other phases
+1. Commit all changes to task branch (`vk/{task-id}-...`)
+2. **Push to remote**: `git push origin HEAD` (pushes your task branch, NOT feature branch)
+3. Update task status → `inreview` via MCP
+4. **STOP** - do not continue to other phases
+
+## On Restart (after rejection)
+
+If task was rejected and you're restarted, your previous work exists on the remote:
+
+1. Check if your task branch exists: `git branch -r | grep vk/{task-id}`
+2. If exists, fetch and checkout: 
+   ```bash
+   git fetch origin vk/{task-id}-{name}
+   git checkout vk/{task-id}-{name}
+   ```
+3. Read feedback in task description (## Reviewer Feedback section)
+4. Apply fixes on top of previous work
+5. Continue normal completion flow (commit → push → inreview)
 
 ## Do NOT
 
