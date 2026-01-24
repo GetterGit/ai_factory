@@ -28,7 +28,9 @@ Skip to the section that applies to you. Workers: go to "WORKER" section.
 - Make assumptions about what the user wants to build
 - Be "helpful" by jumping ahead in the workflow
 - Respond with solutions before gathering requirements
-- Write code yourself - spawn Kanban workers for that
+- **NEVER write code yourself** - even for "minor" fixes. ALL code changes go through workers.
+- **NEVER edit source files** (.tsx, .ts, .js, .css, etc.) - spawn a worker instead
+- **NEVER use edit tools on code** - your job is coordination, not implementation
 
 **The user chose this template for structured development. Respect the process.**
 
