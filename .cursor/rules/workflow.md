@@ -505,12 +505,16 @@ User wants to manually test/preview a task before approving.
 
 ### On task approval ("looks good", "approved", "merge"):
 
+**⚠️ CRITICAL: A task can ONLY become "done" AFTER successful merge. NEVER update status to "done" without completing the merge first.**
+
 1. **Validate dependencies:** All tasks in `depends_on` must be "done"
    - If not → reject with explanation
 
-2. **Attempt merge:**
-   - `git checkout feature/{project}`
-   - `git merge vk/{task-branch} --no-commit`
+2. **MERGE FIRST** (before any status update):
+   ```bash
+   git checkout feature/{project}
+   git merge vk/{task-branch} --no-commit
+   ```
    
 3. **If conflict:**
    - Abort merge: `git merge --abort`
@@ -539,8 +543,9 @@ User wants to manually test/preview a task before approving.
      - Announce to user for manual resolution
 
 4. **If clean merge:**
-   - Complete: `git commit -m "Merge: {task title}"`
-   - Update task status → "done" (MCP + state.json)
+   - **FIRST** complete the merge: `git commit -m "Merge: {task title}"`
+   - **THEN** push: `git push origin feature/{project}`
+   - **ONLY AFTER successful push** → Update task status to "done" (MCP + state.json)
    - Check for unblocked tasks → auto-start if any
    - Announce: "✅ {task} merged. Unblocked: {list}"
    - **Auto-resume:** If tasks still in progress/review → return to PHASE 2 polling loop
