@@ -55,10 +55,10 @@ These are patterns — the orchestrator understands natural variations.
 |-----------------|--------------|
 | `status` / `progress` / `check` | Polls Kanban, reports all task statuses |
 | `review` | Shows tasks ready for human review (passed auto-review) |
+| `test task X` / `preview task X` | Starts dev server for task X so you can test locally |
 | `Task X looks good` | Approves task, merges branch, unblocks dependents |
 | `Task X needs changes: [feedback]` | Rejects task, restarts worker with feedback |
-| `start` / `continue` | Starts workers for tasks that are ready to be started 
-(status="todo" + all dependencies="done") |
+| `start` / `continue` | Starts workers for ready tasks (todo + all deps done) |
 
 Note: During task execution (Phase 2 below), the orchestrator auto-polls every 1 minute and auto-starts tasks as dependencies complete.
 

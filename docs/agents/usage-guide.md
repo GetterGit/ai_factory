@@ -121,6 +121,8 @@ Rejected → Worker restarts with your feedback
 
 During execution, you can:
 - `status` - See current task progress
+- `review` - See tasks ready for review
+- `test task X` - Start dev server to test task locally
 - `approve task X` - Approve a reviewed task
 - `task X needs changes: [feedback]` - Reject with feedback
 

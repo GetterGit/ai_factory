@@ -443,7 +443,44 @@ A task is reviewable by human ONLY if ALL conditions are met:
    
    To approve: "Task 1 looks good"
    To request changes: "Task 1 needs changes: [your feedback]"
+   To test locally: "test task 1" or "preview task 1"
    ```
+
+### On "test task X" or "preview task X":
+
+User wants to manually test/preview a task before approving.
+
+1. **Validate task is reviewable** (same criteria as above)
+   - If not reviewable → explain why
+
+2. **Navigate to task worktree:**
+   ```bash
+   cd /tmp/vibe-kanban/worktrees/{task-id}/{repo-name}
+   ```
+
+3. **Read plan.md** to understand project type, tech stack, and dependencies
+
+4. **Determine and execute appropriate test setup** based on project context
+   (e.g., start dev server, launch emulator, run notebook, provide CLI commands)
+
+5. **Announce with clear instructions:**
+   ```
+   🚀 Ready to test "{task title}"
+   
+   {How to test - determined from plan.md context}
+   
+   After testing:
+   - "looks good" to approve
+   - "needs changes: [feedback]" to reject
+   - "stop" to stop without decision
+   ```
+
+6. **Wait for user decision**
+
+7. **On decision (approve/reject/stop):**
+   - Cleanup (stop servers, close emulators, etc.)
+   - Handle approval/rejection as normal (see below)
+   - Resume polling loop if tasks still in progress
 
 ### On task approval ("looks good", "approved", "merge"):
 
@@ -485,6 +522,7 @@ A task is reviewable by human ONLY if ALL conditions are met:
    - Update task status → "done" (MCP + state.json)
    - Check for unblocked tasks → auto-start if any
    - Announce: "✅ {task} merged. Unblocked: {list}"
+   - **Auto-resume:** If tasks still in progress/review → return to PHASE 2 polling loop
 
 ### On task rejection ("needs changes" + feedback):
 
