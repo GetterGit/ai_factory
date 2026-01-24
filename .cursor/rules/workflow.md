@@ -347,9 +347,18 @@ The orchestrator runs a continuous monitoring loop:
      - Announce: "✅ Task '{title}' passed auto-review, ready for human review"
    
    - If contains issues:
-     - Append to task description: `## Reviewer Feedback (auto)\n{issues}`
+     - **APPEND** to task description (NEVER replace original):
+       ```
+       {KEEP ENTIRE ORIGINAL DESCRIPTION}
+       
+       ---
+       
+       ## Reviewer Feedback (auto)
+       
+       {issues from subagent}
+       ```
      - Set `status = "rejected"`, `agent_reviewed = false`
-     - Set `rejection_feedback = {issues}`
+     - Set `rejection_feedback = {issues}` in state.json
      - Restart worker via `start_workspace_session`
      - Announce: "🔄 Task '{title}' failed auto-review, worker restarting"
 
@@ -538,11 +547,23 @@ User wants to manually test/preview a task before approving.
 
 ### On task rejection ("needs changes" + feedback):
 
-1. **Update rejected task:**
-   - Append to task description: `## Reviewer Feedback (human)\n{feedback}`
+1. **Update rejected task description** (via MCP `update_task`):
+   
+   **CRITICAL: NEVER replace the original description. APPEND feedback at the end.**
+   
+   ```
+   {KEEP ENTIRE ORIGINAL DESCRIPTION - job story, acceptance criteria, everything}
+   
+   ---
+   
+   ## Reviewer Feedback (human)
+   
+   {digested user's feedback here}
+   ```
+   
    - Set `status = "rejected"`
    - Set `agent_reviewed = false` (will need re-review after rework)
-   - Set `rejection_feedback = {feedback}`
+   - Set `rejection_feedback = {feedback}` in state.json
 
 2. **Cascade block dependents:**
    - Find all tasks where `depends_on` includes this task
@@ -743,9 +764,24 @@ You handle BUILDING, TESTING, and MERGE CONFLICT RESOLUTION:
 
 ## On Completion
 
-1. Commit all changes to task branch
-2. Update task status → `inreview` via MCP
-3. **STOP** - do not continue to other phases
+1. Commit all changes to task branch (`vk/{task-id}-...`)
+2. **Push to remote**: `git push origin HEAD` (pushes your task branch, NOT feature branch)
+3. Update task status → `inreview` via MCP
+4. **STOP** - do not continue to other phases
+
+## On Restart (after rejection)
+
+If task was rejected and you're restarted, your previous work exists on the remote:
+
+1. Check if your task branch exists: `git branch -r | grep vk/{task-id}`
+2. If exists, fetch and checkout: 
+   ```bash
+   git fetch origin vk/{task-id}-{name}
+   git checkout vk/{task-id}-{name}
+   ```
+3. Read feedback in task description (## Reviewer Feedback section)
+4. Apply fixes on top of previous work
+5. Continue normal completion flow (commit → push → inreview)
 
 ## Do NOT
 
