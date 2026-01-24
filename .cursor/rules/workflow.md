@@ -558,7 +558,7 @@ User wants to manually test/preview a task before approving.
    
    ## Reviewer Feedback (human)
    
-   {user's feedback here}
+   {digested user's feedback here}
    ```
    
    - Set `status = "rejected"`
