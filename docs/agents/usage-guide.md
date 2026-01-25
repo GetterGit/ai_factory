@@ -74,8 +74,8 @@ your-project/
 
 | Agent | Role | Where Defined |
 |-------|------|---------------|
-| **Orchestrator** | Manages workflow, spawns workers, coordinates reviews | Main Cursor chat |
-| **Workers** | Build + test individual tasks in parallel | `.vibe-kanban/profiles.json` |
+| **Orchestrator** | Manages workflow, spawns workers, coordinates reviews. **NEVER writes code** - delegates all coding to workers. | Main Cursor chat |
+| **Workers** | Build + test individual tasks in parallel. Push code before completing. | `.vibe-kanban/profiles.json` |
 | **Reviewer** | Auto-reviews code against acceptance criteria | `.cursor/agents/reviewer.md` |
 
 ## Human Approval Gates
@@ -105,17 +105,19 @@ After all tasks approved:
 When tasks reach "In Review":
 
 ```
-Worker completes task → Auto-review by reviewer subagent
+Worker completes task (pushes code first) → Auto-review by reviewer subagent
     ↓
-If issues → Worker restarts with feedback
+If issues → Feedback appended (#1, #2...), worker restarts
     ↓
 If approved → Ready for human review
     ↓
 You review: "approve" or "needs changes: [feedback]"
     ↓
-Approved → Merged to feature branch
-Rejected → Worker restarts with your feedback
+Approved → Merged to feature branch → pushed → status = done
+Rejected → Feedback appended (preserved as history), worker restarts
 ```
+
+**Note:** All feedback is preserved as numbered history (#1, #2, #3...) - never overwritten.
 
 ## User Commands
 

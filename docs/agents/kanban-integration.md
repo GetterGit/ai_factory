@@ -76,7 +76,9 @@ After plan approval, orchestrator:
 5. Creates feature branch: `feature/{project-name}`
 6. Creates tasks in Kanban via MCP
 7. Saves state to `.vibe-kanban/state.json`
-8. Starts task workers via MCP `start_workspace_session` → transitions to Phase 2
+8. Starts task workers via MCP `start_workspace_session`
+9. Copies `.env` and `.env.local` files to each worktree (env files are gitignored)
+10. Transitions to Phase 2
 
 ### Phase 2: Execution
 
@@ -114,15 +116,18 @@ Human reviews tasks that passed auto-review.
    - 🔒 BLOCKED: passed auto-review but deps not done
 3. User approves or rejects reviewable tasks
 
-**Approval flow:**
-- Validate dependencies
-- Merge task branch to feature branch
-- Update status → `done`
-- Unblock and auto-start dependent tasks
+**Approval flow** (strict order - merge BEFORE status update):
+1. Validate dependencies (all must be "done")
+2. Merge task branch to feature branch: `git merge vk/{task-branch}`
+3. Push feature branch: `git push origin feature/{project}`
+4. **ONLY AFTER successful push** → Update status to `done`
+5. Unblock and auto-start dependent tasks (with env file copying)
 
 **Rejection flow:**
-- Add feedback to task description
+- **APPEND** feedback to task description (never replace original or previous feedback)
+- Number feedback sequentially: `## Reviewer Feedback #1 (human)`, `#2`, etc.
 - Status → `rejected`, `agent_reviewed = false`
+- Increment `feedback_iteration` counter in state.json
 - Cascade block dependent tasks
 - Restart worker (will go through auto-review again after completion)
 
@@ -213,6 +218,7 @@ When user cancels a task:
       "status": "rejected",
       "agent_reviewed": false,
       "rejection_feedback": "Missing createdAt field in Todo model",
+      "feedback_iteration": 2,
       "merge_retries": 0,
       "depends_on": ["abc-122"],
       "branch": "vk/abc-123-create-todo-model"
@@ -232,8 +238,10 @@ When user cancels a task:
 - `acceptance_criteria`: Full GHERKIN scenarios
 - `status`: Extended status enum (see table above)
 - `agent_reviewed`: `true` = passed auto-review, `false` = pending or failed auto-review
-- `rejection_feedback`: Present when status = rejected (contains reviewer feedback)
+- `rejection_feedback`: Present when status = rejected (contains latest reviewer feedback)
+- `feedback_iteration`: Count of review iterations (feedback #1, #2, etc.)
 - `merge_retries`: Count of merge conflict resolution attempts (max 2, then escalate to human)
+- `branch`: Task branch name (e.g., `vk/abc-123-task-name`)
 
 ---
 
@@ -261,8 +269,14 @@ The orchestrator ensures this by:
 
 **If a task is restarted** (after rejection):
 - Orchestrator calls `start_workspace_session` again
-- Worker continues on existing task branch with rejection feedback
+- Orchestrator copies `.env` and `.env.local` files to new worktree
+- Worker fetches existing task branch: `git fetch origin vk/{task-branch} && git checkout vk/{task-branch}`
+- Worker continues on existing task branch with rejection feedback (full history preserved in description)
 - Any missing code from recently merged tasks is handled at merge time
+
+**Worker must push before completing:**
+- Before moving to `inreview`, worker runs: `git push origin HEAD`
+- This preserves work for potential restarts
 
 ---
 
