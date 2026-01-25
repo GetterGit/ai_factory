@@ -347,20 +347,24 @@ The orchestrator runs a continuous monitoring loop:
      - Announce: "✅ Task '{title}' passed auto-review, ready for human review"
    
    - If contains issues:
-     - **APPEND** to task description (NEVER replace original):
+     - **APPEND** to task description (NEVER replace original OR previous feedback):
        ```
        {KEEP ENTIRE ORIGINAL DESCRIPTION}
        
+       {KEEP ALL PREVIOUS FEEDBACK SECTIONS}
+       
        ---
        
-       ## Reviewer Feedback (auto)
+       ## Reviewer Feedback #{N} (auto)
        
        {issues from subagent}
        ```
+     - Number feedback sequentially to track iteration history
      - Set `status = "rejected"`, `agent_reviewed = false`
      - Set `rejection_feedback = {issues}` in state.json
+     - Increment `feedback_iteration` counter in state.json
      - Restart worker via `start_workspace_session`
-     - Announce: "🔄 Task '{title}' failed auto-review, worker restarting"
+     - Announce: "🔄 Task '{title}' failed auto-review (attempt #{N}), worker restarting"
 
 3. **Check for unblocked tasks:**
    - When a task is merged (status → "done"), check its dependents
@@ -554,21 +558,26 @@ User wants to manually test/preview a task before approving.
 
 1. **Update rejected task description** (via MCP `update_task`):
    
-   **CRITICAL: NEVER replace the original description. APPEND feedback at the end.**
+   **CRITICAL: NEVER replace original description OR previous feedback. APPEND new feedback.**
    
    ```
    {KEEP ENTIRE ORIGINAL DESCRIPTION - job story, acceptance criteria, everything}
    
+   {KEEP ALL PREVIOUS FEEDBACK SECTIONS - they are history}
+   
    ---
    
-   ## Reviewer Feedback (human)
+   ## Reviewer Feedback #{N} (human)
    
    {digested user's feedback here}
    ```
    
+   Number feedback sequentially (#1, #2, #3...) to track iteration history.
+   
    - Set `status = "rejected"`
    - Set `agent_reviewed = false` (will need re-review after rework)
    - Set `rejection_feedback = {feedback}` in state.json
+   - Increment `feedback_iteration` counter in state.json
 
 2. **Cascade block dependents:**
    - Find all tasks where `depends_on` includes this task
