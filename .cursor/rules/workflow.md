@@ -509,7 +509,10 @@ User wants to manually test/preview a task before approving.
 
 ### On task approval ("looks good", "approved", "merge"):
 
-**⚠️ CRITICAL: A task can ONLY become "done" AFTER successful merge. NEVER update status to "done" without completing the merge first.**
+**⚠️ CRITICAL RULES:**
+1. **NEVER merge without explicit human approval** - "looks good", "approved", "merge it", etc.
+2. **A task can ONLY become "done" AFTER successful merge**
+3. **Passing auto-review does NOT mean approved** - human must still review and approve
 
 1. **Validate dependencies:** All tasks in `depends_on` must be "done"
    - If not → reject with explanation
