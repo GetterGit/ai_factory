@@ -286,7 +286,12 @@ If user requests changes → update plan → show summary → wait again.
    📦 Setting up local Supabase for safe development.
    
    I need your Supabase project reference ID.
-   Find it at: Supabase Dashboard → Project Settings → General → "Reference ID"
+   
+   How to find it:
+   1. Go to https://supabase.com/dashboard
+   2. Select your project
+   3. Click "Project Settings" (gear icon, bottom left)
+   4. Under "General", copy "Reference ID" (looks like: abcdefghijklmnop)
    
    Paste it here:
    ```
@@ -338,15 +343,49 @@ If user requests changes → update plan → show summary → wait again.
    ⚠️ Remember: Set prod keys in Vercel, not in .env files.
    ```
 
-4. **Update .gitignore** if needed:
+4. **Handle other environment variables:**
+   
+   Check if project has other required secrets (from plan.md External APIs section):
+   
+   ```
+   📋 Other environment variables needed:
+   
+   These services require API keys that YOU must provide:
+   ```
+   
+   For each external API (Stripe, SendGrid, OpenAI, etc.):
+   - Add placeholder to `.env.local.example`:
+     ```
+     # Stripe (get from https://dashboard.stripe.com/apikeys)
+     STRIPE_SECRET_KEY=sk_test_your_key_here
+     STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
+     ```
+   - Ask user: "Do you have {SERVICE} API keys? Paste them or type 'skip' to add later"
+   - If provided → add to `.env.local`
+   - If skipped → leave placeholder, warn user to add before testing that feature
+
+5. **Update .gitignore** if needed:
    ```bash
    echo ".env.local" >> .gitignore
    ```
 
-5. **Commit setup files:**
+6. **Commit setup files:**
    ```bash
    git add .env.local.example supabase/ package.json .gitignore
    git commit -m "chore: Add local Supabase setup"
+   ```
+   
+7. **Final summary:**
+   ```
+   ✅ Environment setup complete!
+   
+   Configured:
+   - [x] Supabase (local)
+   - [x] Stripe (provided) or [ ] Stripe (add later to .env.local)
+   - etc.
+   
+   Missing keys can be added to .env.local anytime.
+   Prod keys go in Vercel only.
    ```
 
 ### Step 9: Decompose into Tasks
