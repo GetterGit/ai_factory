@@ -315,11 +315,106 @@ If user requests changes → update plan → show summary → wait again.
 
 ---
 
-## Kanban Integration (After Plan Approval)
+## Step 9: Local Environment Setup
 
-These steps happen automatically after user approves the plan.
+After plan approval, if project has a database, set up local environment for safe development.
 
-### Environment Verification
+### Principle
+
+Workers must use local/test databases, never production. Prod credentials belong only in deployment environment (Vercel, etc.).
+
+### Check Existing .env.local
+
+If `.env.local` exists:
+1. Read file and check database connection strings
+2. If contains `localhost`, `127.0.0.1`, or known local patterns → already local, skip to "Create .env.local.example"
+3. If contains prod URLs (cloud hostnames like `.supabase.co`, `.neon.tech`, etc.) → warn:
+   ```
+   ⚠️ Your .env.local contains what looks like PRODUCTION database credentials.
+   
+   For safe development, workers need local database access.
+   
+   Options:
+   1. Replace with local credentials (I'll back up to .env.local.prod-backup)
+   2. Keep as-is (DANGER: workers may modify prod data)
+   
+   Which option?
+   ```
+4. If option 1 → `cp .env.local .env.local.prod-backup` and continue
+5. If option 2 → warn and continue (user's choice, their risk)
+
+### Set Up Local Database
+
+Based on database type from plan.md, start local instance:
+- **Docker-based**: Most databases (Postgres, MySQL, MongoDB, etc.)
+- **Local emulator**: Firebase, DynamoDB Local, etc.
+- **File-based**: SQLite (no setup needed)
+- **Built-in local mode**: Supabase CLI, PlanetScale branches, Neon branches
+
+**Assumption**: If prod schema exists, migrations in the repo can reconstruct it locally. No need to connect to prod.
+
+### Apply Migrations
+
+If migration folder exists (e.g., `supabase/migrations/`, `prisma/migrations/`, `migrations/`):
+- Run migration tool to apply all migrations to local DB
+- This reconstructs schema without connecting to prod
+
+### Create .env.local.example
+
+Create with:
+- Local database connection strings (localhost URLs, standard local keys)
+- Placeholders for external APIs with comments on where to get them
+- Comments explaining each variable
+
+Example structure:
+```bash
+# Database - Local instance
+DATABASE_URL=postgresql://localhost:5432/myapp_dev
+# or for Supabase local:
+# NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG... (standard local key)
+
+# External APIs - Get your own keys
+# STRIPE_SECRET_KEY=sk_test_... (https://dashboard.stripe.com/apikeys)
+# OPENAI_API_KEY=sk-... (https://platform.openai.com/api-keys)
+```
+
+### Create/Update .env.local
+
+1. Copy `.env.local.example` to `.env.local`
+2. For other keys (e.g. external APIs) from plan.md, ask user for each:
+   ```
+   Your project uses {SERVICE}. Do you have keys?
+   - Paste key, or
+   - Type 'skip' to add later
+   ```
+3. If provided → add to `.env.local`
+4. If skipped → leave placeholder
+
+### Finalize
+
+1. Add to `.gitignore`: `.env.local` (if not already)
+2. Commit `.env.local.example` (safe - no real secrets)
+3. Announce:
+   ```
+   ✅ Local environment configured!
+   
+   - Database: {LOCAL_DB_INFO}
+   - .env.local points to LOCAL resources
+   - Prod is protected
+   
+   External APIs: {list configured or "add to .env.local as needed"}
+   ```
+
+---
+
+## Steps 10-11: Kanban Integration
+
+These steps happen automatically after local environment setup.
+
+### Step 10: Decompose into Tasks
+
+#### Environment Verification
 
 Before decomposing into tasks:
 
@@ -357,7 +452,7 @@ For each task, determine:
 - Keep chains shallow when possible (≤3 deep)
 - Validate no circular dependencies (A→B→A)
 
-### State File
+#### State File
 
 After creating tasks, save to `.vibe-kanban/state.json`.
 
@@ -366,3 +461,18 @@ See `docs/agents/kanban-integration.md` → State File Format for the complete s
 Key points:
 - `description`: Include full job story text
 - `acceptance_criteria`: Full GHERKIN scenarios (Given/When/Then)
+
+### Step 11: Start Execution
+
+After tasks are created:
+
+1. **Identify startable tasks:**
+   - Status = "todo"
+   - All tasks in `depends_on` have status = "done" (or empty)
+
+2. **For each startable task:**
+   - Call `start_workspace_session` via MCP with variant = "DEFAULT"
+   - Copy `.env.local` to worktree (env files are gitignored)
+   - Update state.json: status → "inprogress"
+
+3. **Announce and transition to PHASE 2 (EXECUTION)**

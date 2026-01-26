@@ -270,125 +270,24 @@ If user requests changes → update plan → show summary → wait again.
 
 **On approval**:
 1. Update `docs/plan.md` Approval Status to "Approved" with timestamp
-2. **If Supabase in tech stack** → Run Step 8.5 (Local DB Setup)
-3. Proceed to Step 9 (Kanban decomposition)
+2. **If database in tech stack** → Run Step 9 (Local Environment Setup)
+3. Proceed to Step 10 (Kanban decomposition)
 
-### Step 8.5: Local Database Setup (if Supabase)
+### Step 9: Local Environment Setup
 
-**Skip this step if:**
-- Not using Supabase
-- `supabase/config.toml` already exists (already set up)
+**Principle:** Workers must use local/test databases, never production.
 
-**Automated setup:**
+**Reference:** See `docs/agents/checklist.md` → "Local Environment Setup" for detailed steps.
 
-1. **Ask user ONE question:**
-   ```
-   📦 Setting up local Supabase for safe development.
-   
-   I need your Supabase project reference ID.
-   
-   How to find it:
-   1. Go to https://supabase.com/dashboard
-   2. Select your project
-   3. Click "Project Settings" (gear icon, bottom left)
-   4. Under "General", copy "Reference ID" (looks like: abcdefghijklmnop)
-   
-   Paste it here:
-   ```
+**High-level flow:**
+1. Check if existing `.env.local` has prod credentials → warn if so
+2. Set up local database instance (Docker, emulator, or file-based)
+3. Apply existing migrations to reconstruct schema locally
+4. Create `.env.local.example` and `.env.local` with local credentials
+5. Prompt user for other .env.local keys (like external APIs) if needed
+6. Commit `.env.local.example`
 
-2. **Run automated setup** (after user provides ref):
-   ```bash
-   # Initialize local Supabase
-   supabase init
-   
-   # Link to prod (to pull schema)
-   supabase link --project-ref {USER_PROVIDED_REF}
-   
-   # Pull existing schema as migrations
-   supabase db pull
-   
-   # Create .env.local.example with standard local keys
-   cat > .env.local.example << 'EOF'
-   # Local Supabase - standard keys, safe to commit
-   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-   EOF
-   
-   # Create .env.local from example
-   cp .env.local.example .env.local
-   
-   # Add setup scripts to package.json
-   npm pkg set scripts.setup:local="supabase start && supabase db reset"
-   npm pkg set scripts.db:reset="supabase db reset"
-   
-   # Start local Supabase
-   supabase start
-   
-   # Apply migrations to local DB
-   supabase db reset
-   ```
-
-3. **Verify and announce:**
-   ```
-   ✅ Local Supabase configured!
-   
-   - Local DB: http://localhost:54321
-   - Studio UI: http://localhost:54323
-   - Schema synced from prod
-   - .env.local points to LOCAL (safe)
-   
-   Your prod database is protected. Workers will use local DB only.
-   
-   ⚠️ Remember: Set prod keys in Vercel, not in .env files.
-   ```
-
-4. **Handle other environment variables:**
-   
-   Check if project has other required secrets (from plan.md External APIs section):
-   
-   ```
-   📋 Other environment variables needed:
-   
-   These services require API keys that YOU must provide:
-   ```
-   
-   For each external API (Stripe, SendGrid, OpenAI, etc.):
-   - Add placeholder to `.env.local.example`:
-     ```
-     # Stripe (get from https://dashboard.stripe.com/apikeys)
-     STRIPE_SECRET_KEY=sk_test_your_key_here
-     STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
-     ```
-   - Ask user: "Do you have {SERVICE} API keys? Paste them or type 'skip' to add later"
-   - If provided → add to `.env.local`
-   - If skipped → leave placeholder, warn user to add before testing that feature
-
-5. **Update .gitignore** if needed:
-   ```bash
-   echo ".env.local" >> .gitignore
-   ```
-
-6. **Commit setup files:**
-   ```bash
-   git add .env.local.example supabase/ package.json .gitignore
-   git commit -m "chore: Add local Supabase setup"
-   ```
-   
-7. **Final summary:**
-   ```
-   ✅ Environment setup complete!
-   
-   Configured:
-   - [x] Supabase (local)
-   - [x] Stripe (provided) or [ ] Stripe (add later to .env.local)
-   - etc.
-   
-   Missing keys can be added to .env.local anytime.
-   Prod keys go in Vercel only.
-   ```
-
-### Step 9: Decompose into Tasks
+### Step 10: Decompose into Tasks
 
 After plan approval, decompose into Kanban tasks.
 
@@ -402,7 +301,7 @@ After plan approval, decompose into Kanban tasks.
 5. Save state to `.vibe-kanban/state.json`
 6. Announce task list and say "start" to begin
 
-### Step 10: Start Execution
+### Step 11: Start Execution
 
 1. **Identify startable tasks:**
    - Status = "todo"
