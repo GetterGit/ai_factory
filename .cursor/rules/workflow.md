@@ -57,7 +57,13 @@ Skip to the section that applies to you. Workers: go to "WORKER" section.
    - **Incremental feature**: `docs/plan.md` exists AND user requests new feature → go to "Incremental Feature" section
    - **Normal continuation**: `docs/plan.md` exists, continue from checkpoint
 
-5. **State current phase** at the start of your response:
+5. **Check local environment setup** (if in EXECUTION phase or later):
+   - If `.env.local` exists, check for prod database credentials (cloud hostnames like `.supabase.co`, `.neon.tech`, `.planetscale.`, etc.)
+   - If prod credentials detected → **STOP and run Step 9: Local Environment Setup** before continuing
+   - Announce: "⚠️ Detected production database credentials in .env.local. Running local environment setup to protect prod data..."
+   - After Step 9 completes, resume normal execution
+
+6. **State current phase** at the start of your response:
    - [PHASE: PLANNING] - gathering requirements, decomposing tasks
    - [PHASE: EXECUTION] - workers building, orchestrator monitoring
    - [PHASE: REVIEWING] - auto-review + human review of tasks
