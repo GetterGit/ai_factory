@@ -345,11 +345,10 @@ If `.env.local` exists:
 
 ### Set Up Local Database
 
-Based on database type from plan.md, start local instance:
-- **Docker-based**: Most databases (Postgres, MySQL, MongoDB, etc.)
-- **Local emulator**: Firebase, DynamoDB Local, etc.
-- **File-based**: SQLite (no setup needed)
-- **Built-in local mode**: Supabase CLI, PlanetScale branches, Neon branches
+1. Identify database type from plan.md or existing project config
+2. Determine appropriate local setup method (Docker, CLI, emulator, etc.)
+3. Run commands to start local instance
+4. Capture connection strings and keys from output
 
 **Assumption**: If prod schema exists, migrations in the repo can reconstruct it locally. No need to connect to prod.
 
@@ -361,23 +360,10 @@ If migration folder exists (e.g., `supabase/migrations/`, `prisma/migrations/`, 
 
 ### Create .env.local.example
 
-Create with:
-- Local database connection strings (localhost URLs, standard local keys)
-- Placeholders for external APIs with comments on where to get them
-- Comments explaining each variable
-
-Example structure:
-```bash
-# Database - Local instance
-DATABASE_URL=postgresql://localhost:5432/myapp_dev
-# or for Supabase local:
-# NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbG... (standard local key)
-
-# External APIs - Get your own keys
-# STRIPE_SECRET_KEY=sk_test_... (https://dashboard.stripe.com/apikeys)
-# OPENAI_API_KEY=sk-... (https://platform.openai.com/api-keys)
-```
+Create `.env.local.example` using the keys captured from the local database setup:
+1. Add local database connection strings/keys from previous step
+2. Add placeholders for other keys (e.g. external APIs) from plan.md with comments on where to get them
+3. This file is safe to commit (contains only local/placeholder values)
 
 ### Create/Update .env.local
 
