@@ -270,9 +270,24 @@ If user requests changes → update plan → show summary → wait again.
 
 **On approval**:
 1. Update `docs/plan.md` Approval Status to "Approved" with timestamp
-2. Proceed to Step 9 (Kanban decomposition)
+2. **If database in tech stack** → Run Step 9 (Local Environment Setup)
+3. Proceed to Step 10 (Kanban decomposition)
 
-### Step 9: Decompose into Tasks
+### Step 9: Local Environment Setup
+
+**Principle:** Workers must use local/test databases, never production.
+
+**Reference:** See `docs/agents/checklist.md` → "Local Environment Setup" for detailed steps.
+
+**High-level flow:**
+1. Check if existing `.env.local` has prod credentials → warn if so
+2. Set up local database instance (Docker, emulator, or file-based)
+3. Apply existing migrations to reconstruct schema locally
+4. Create `.env.local.example` and `.env.local` with local credentials
+5. Prompt user for other .env.local keys (like external APIs) if needed
+6. Commit `.env.local.example`
+
+### Step 10: Decompose into Tasks
 
 After plan approval, decompose into Kanban tasks.
 
@@ -286,7 +301,7 @@ After plan approval, decompose into Kanban tasks.
 5. Save state to `.vibe-kanban/state.json`
 6. Announce task list and say "start" to begin
 
-### Step 10: Start Execution
+### Step 11: Start Execution
 
 1. **Identify startable tasks:**
    - Status = "todo"
