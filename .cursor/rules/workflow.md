@@ -270,7 +270,84 @@ If user requests changes → update plan → show summary → wait again.
 
 **On approval**:
 1. Update `docs/plan.md` Approval Status to "Approved" with timestamp
-2. Proceed to Step 9 (Kanban decomposition)
+2. **If Supabase in tech stack** → Run Step 8.5 (Local DB Setup)
+3. Proceed to Step 9 (Kanban decomposition)
+
+### Step 8.5: Local Database Setup (if Supabase)
+
+**Skip this step if:**
+- Not using Supabase
+- `supabase/config.toml` already exists (already set up)
+
+**Automated setup:**
+
+1. **Ask user ONE question:**
+   ```
+   📦 Setting up local Supabase for safe development.
+   
+   I need your Supabase project reference ID.
+   Find it at: Supabase Dashboard → Project Settings → General → "Reference ID"
+   
+   Paste it here:
+   ```
+
+2. **Run automated setup** (after user provides ref):
+   ```bash
+   # Initialize local Supabase
+   supabase init
+   
+   # Link to prod (to pull schema)
+   supabase link --project-ref {USER_PROVIDED_REF}
+   
+   # Pull existing schema as migrations
+   supabase db pull
+   
+   # Create .env.local.example with standard local keys
+   cat > .env.local.example << 'EOF'
+   # Local Supabase - standard keys, safe to commit
+   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+   EOF
+   
+   # Create .env.local from example
+   cp .env.local.example .env.local
+   
+   # Add setup scripts to package.json
+   npm pkg set scripts.setup:local="supabase start && supabase db reset"
+   npm pkg set scripts.db:reset="supabase db reset"
+   
+   # Start local Supabase
+   supabase start
+   
+   # Apply migrations to local DB
+   supabase db reset
+   ```
+
+3. **Verify and announce:**
+   ```
+   ✅ Local Supabase configured!
+   
+   - Local DB: http://localhost:54321
+   - Studio UI: http://localhost:54323
+   - Schema synced from prod
+   - .env.local points to LOCAL (safe)
+   
+   Your prod database is protected. Workers will use local DB only.
+   
+   ⚠️ Remember: Set prod keys in Vercel, not in .env files.
+   ```
+
+4. **Update .gitignore** if needed:
+   ```bash
+   echo ".env.local" >> .gitignore
+   ```
+
+5. **Commit setup files:**
+   ```bash
+   git add .env.local.example supabase/ package.json .gitignore
+   git commit -m "chore: Add local Supabase setup"
+   ```
 
 ### Step 9: Decompose into Tasks
 
