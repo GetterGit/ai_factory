@@ -38,13 +38,21 @@ The orchestrator will:
 your-project/
 ├── .cursor/
 │   ├── rules/
-│   │   └── workflow.md              # Main workflow (auto-loaded)
+│   │   ├── workflow.md              # Main workflow (auto-loaded)
+│   │   └── critical.md              # Critical rules (always-apply)
 │   ├── agents/
 │   │   └── reviewer.md              # Reviewer subagent definition
-│   └── mcp.json                     # Vibe Kanban MCP config
+│   └── mcp.json                     # MCP config (Vibe Kanban + GitFlow)
 ├── .vibe-kanban/
 │   ├── profiles.json                # Worker agent configuration
 │   └── state.json                   # Task state (created at runtime)
+├── tools/
+│   └── gitflow-enforcer/            # GitFlow MCP server
+│       ├── src/index.js             # MCP tool implementations
+│       └── package.json
+├── scripts/
+│   ├── install-hooks.sh             # Git hooks installer
+│   └── git-hooks/                   # Hook scripts (pre-push, pre-merge-commit)
 ├── docs/
 │   ├── agents/
 │   │   ├── checklist.md             # Planning guide
@@ -66,9 +74,9 @@ your-project/
 | Phase | Name | Actor | What Happens | Human Input |
 |-------|------|-------|--------------|-------------|
 | **1** | PLANNING | Orchestrator | Gather requirements, job stories, GHERKIN scenarios, propose stack, decompose into tasks | Approve plan |
-| **2** | EXECUTION | Workers (parallel) | Build + test each task, orchestrator monitors with 1 min polling | - |
+| **2** | EXECUTION | Workers (parallel) | Build + test each task, orchestrator polls (1 min) and syncs status | - |
 | **3** | REVIEWING | Orchestrator + Reviewer | Auto-review by subagent → Human review → Merge | Approve or reject tasks |
-| **4** | DOCUMENTING | Orchestrator | Final merge to main, generate README, cleanup | - |
+| **4** | DOCUMENTING | Orchestrator | Final merge to main, generate README | Approve final build |
 
 ## Agent Architecture
 
@@ -84,6 +92,7 @@ The orchestrator **stops and waits** at:
 
 1. **After Planning** - Review `docs/plan.md` before execution starts
 2. **During Review** - Approve/reject each completed task
+3. **After Documenting** - Final approval before END (or request rework)
 
 ## Git Flow
 
@@ -124,9 +133,8 @@ Rejected → Feedback appended (preserved as history), worker restarts
 During execution, you can:
 - `status` - See current task progress
 - `review` - See tasks ready for review
-- `test task X` - Start dev server to test task locally
-- `approve task X` - Approve a reviewed task
-- `task X needs changes: [feedback]` - Reject with feedback
+- `Task X looks good` / `approve task X` - Approve a reviewed task
+- `Task X needs changes: [feedback]` - Reject with feedback
 
 ## Project Modes
 
@@ -149,17 +157,62 @@ If project is complete but you want to add a feature:
 
 | File | When | Purpose |
 |------|------|---------|
-| `docs/status.md` | Phase 1 start | Tracks current phase |
-| `docs/plan.md` | Phase 1 end | Full specification |
-| `.vibe-kanban/state.json` | Phase 1 end | Task state and checkpoints |
+| `docs/status.md` | Phase 1 Step 1 | Tracks current phase |
+| `docs/plan.md` | Phase 1 Step 8 | Full specification |
+| `.vibe-kanban/state.json` | Phase 1 Step 10 | Task state (status, depends_on, agent_reviewed) |
 | `docs/learnings.md` | On rework | Captures feedback |
 | `docs/failure-report.md` | If task fails after retries | Documents issues |
 | `README.md` | Phase 4 | Project documentation |
+
+## Task Management Responsibilities
+
+| System | Responsibilities |
+|--------|-----------------|
+| **Vibe Kanban** | Task storage, worker spawning, auto-transitions (`todo`→`inprogress`→`inreview`) |
+| **GitFlow MCP** | Git operations, state.json management, orchestrator actions (reject, merge, block) |
+| **Orchestrator** | Polls Vibe Kanban, syncs status to state.json, triggers actions via MCP |
+
+**Key distinction:**
+- **SYNC** = Orchestrator copies Vibe Kanban status to state.json (direct edit)
+- **ACTION** = Orchestrator makes decision via MCP (reject, merge, block)
+
+## GitFlow Enforcement
+
+Two layers protect the GitFlow:
+
+### Layer 1: MCP Tools (Primary)
+
+The orchestrator uses GitFlow Enforcer MCP tools instead of raw git commands:
+
+| Tool | Purpose |
+|------|---------|
+| `gitflow.get_workflow_state` | Check current state, actionable tasks |
+| `gitflow.create_feature_branch` | Create feature branch after plan approval |
+| `gitflow.merge_task_to_feature` | Merge approved task (validates first) |
+| `gitflow.merge_feature_to_main` | Final merge when all tasks done |
+| `gitflow.transition_task_status` | Orchestrator actions: reject, block (not for sync) |
+
+These tools **validate before executing** - the orchestrator can't accidentally break GitFlow.
+
+### Layer 2: Git Hooks (Fallback)
+
+Installed automatically by orchestrator at workflow start. Blocks:
+- Direct pushes to main
+- Invalid merge targets (task branches → main)
+
+## Setup (Automated)
+
+The orchestrator handles setup automatically at Phase 1 start (if state.json doesn't exist):
+1. Installs npm dependencies for GitFlow MCP (`npm install`)
+2. Installs git hooks (`./scripts/install-hooks.sh`)
+
+State files (`state.json`, `status.md`, `plan.md`) are created during Phase 1 steps.
 
 ## Requirements
 
 - **Cursor** with Agent mode
 - **Claude API access** (Opus 4.5 recommended)
+- **Node.js 18+** (for GitFlow Enforcer MCP - auto-detected)
 
 ## License
 

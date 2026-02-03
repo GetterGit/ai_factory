@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# GitFlow Enforcer - Pre-Merge-Commit Hook (Fallback Safety Net)
+#
+# Validates merge targets follow GitFlow:
+# - Task branches (vk/*) can only merge to feature/* branches
+# - Only feature/* branches can merge to main
+#
+# Primary enforcement is via MCP tools; this is a safety net.
+
+current_branch=$(git branch --show-current)
+merge_head=$(git rev-parse MERGE_HEAD 2>/dev/null)
+
+# Exit if not a merge
+if [ -z "$merge_head" ]; then
+  exit 0
+fi
+
+# Get branch being merged (handles both local and remote refs)
+# git name-rev can return: remotes/origin/feature/foo~3, feature/foo^2~1, tags/v1.0, or just SHA
+merging_branch=$(git name-rev --name-only "$merge_head" 2>/dev/null | sed 's/~.*//' | sed 's/\^.*//')
+
+# If name-rev returns just a SHA (detached/unnamed), allow it through
+# (edge case: manual merges of specific commits - let them pass)
+if [[ "$merging_branch" =~ ^[0-9a-f]{7,40}$ ]]; then
+  exit 0
+fi
+
+# Only apply rules when merging TO main
+if [[ "$current_branch" == "main" ]]; then
+  # Check what we're merging - use unified regex with optional origin/ prefix
+  
+  # Task branches (vk/*) cannot merge directly to main
+  if [[ "$merging_branch" =~ ^(remotes/origin/)?vk/ ]]; then
+    echo "============================================"
+    echo "❌ BLOCKED: Cannot merge task branch to main"
+    echo ""
+    echo "Task branches must merge to feature/* first:"
+    echo "  vk/{task} → feature/{project} → main"
+    echo ""
+    echo "Current attempt:"
+    echo "  Merging: $merging_branch"
+    echo "  Into: $current_branch"
+    echo ""
+    echo "Use MCP tool: gitflow.merge_task_to_feature"
+    echo "============================================"
+    exit 1
+  fi
+  
+  # Only feature/* branches can merge to main
+  if [[ ! "$merging_branch" =~ ^(remotes/origin/)?feature/ ]]; then
+    echo "============================================"
+    echo "❌ BLOCKED: Only feature/* branches can merge to main"
+    echo ""
+    echo "Current attempt:"
+    echo "  Merging: $merging_branch"
+    echo "  Into: $current_branch"
+    echo ""
+    echo "Use MCP tool: gitflow.merge_feature_to_main"
+    echo "============================================"
+    exit 1
+  fi
+fi
+
+exit 0
