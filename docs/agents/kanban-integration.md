@@ -13,7 +13,22 @@ When you describe what you want to build, the orchestrator:
 4. Starts worker agents to execute tasks in parallel
 5. Auto-reviews completed tasks via reviewer subagent
 6. Coordinates human review of approved tasks
-7. Merges approved work and generates documentation
+7. **Merges via GitFlow Enforcer MCP** (validates before any merge)
+8. Generates documentation
+
+---
+
+## GitFlow Enforcement
+
+All git merge operations go through the **GitFlow Enforcer MCP server**, which validates state before executing:
+
+| Tool | Validates | Executes |
+|------|-----------|----------|
+| `gitflow.merge_task_to_feature` | task in review, agent_reviewed=true, deps done, on feature branch | git merge, state update |
+| `gitflow.merge_feature_to_main` | all tasks done, on feature branch | merge to main, push |
+| `gitflow.create_feature_branch` | on main, branch doesn't exist | create and push branch |
+
+Git hooks provide a fallback safety net but MCP tools are the primary enforcement.
 
 ---
 

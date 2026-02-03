@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# GitFlow Enforcer - Pre-Push Hook (Fallback Safety Net)
+# 
+# Blocks direct pushes to main EXCEPT:
+# - Pushes from MCP tool (signaled via GITFLOW_MCP_PUSH env var)
+# - Merge commits from feature/* branches
+#
+# Primary enforcement is via MCP tools; this is a safety net.
+
+protected_branch="main"
+
+# Allow MCP tool's legitimate pushes
+if [[ "$GITFLOW_MCP_PUSH" == "1" ]]; then
+  exit 0
+fi
+
+while read local_ref local_sha remote_ref remote_sha; do
+  if [[ "$remote_ref" == "refs/heads/$protected_branch" ]]; then
+    current_branch=$(git branch --show-current)
+    
+    if [[ "$current_branch" == "$protected_branch" ]]; then
+      # Check if HEAD is a merge commit from a feature branch
+      merge_parents=$(git log -1 --pretty=%P HEAD | wc -w)
+      if [[ "$merge_parents" -gt 1 ]]; then
+        # It's a merge commit - check if parent is from feature/*
+        parent_branch=$(git name-rev --name-only HEAD^2 2>/dev/null | sed 's/~.*//' | sed 's/\^.*//')
+        if [[ "$parent_branch" =~ ^(remotes/origin/)?feature/ ]]; then
+          exit 0  # Allow merge commits from feature branches
+        fi
+      fi
+      
+      echo "============================================"
+      echo "❌ BLOCKED: Direct push to main"
+      echo ""
+      echo "GitFlow requires merging through feature branch:"
+      echo "  1. Task branches (vk/*) → feature/{project}"
+      echo "  2. feature/{project} → main (Phase 4 only)"
+      echo ""
+      echo "Use MCP tool: gitflow.merge_feature_to_main"
+      echo ""
+      echo "This tool validates all tasks are complete"
+      echo "before allowing merge to main."
+      echo ""
+      echo "To bypass (emergency only):"
+      echo "  git push --no-verify origin main"
+      echo "============================================"
+      # Consume remaining stdin to avoid issues with some git versions
+      cat > /dev/null
+      exit 1
+    fi
+  fi
+done
+
+exit 0
